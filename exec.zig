@@ -14,3 +14,18 @@ fn func() void {
     // This line is never reached because the suspend has no matching resume.
     x += 1;
 }
+
+test "resume from suspend" {
+    var my_result: i32 = 1;
+    _ = async testResumeFromSuspend(&my_result);
+    expect(my_result == 2);
+}
+
+fn testResumeFromSuspend(my_result: *i32) void {
+    suspend {
+        resume @frame();
+    }
+    my_result.* += 1;
+    suspend {}
+    my_result.* += 1;
+}
