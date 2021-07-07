@@ -1,6 +1,7 @@
 // From: https://rust-lang.github.io/async-book/02_execution/01_chapter.html
 
 use {
+    chrono::prelude::Utc,
     futures::{
         future::{BoxFuture, Future, FutureExt},
         task::{waker_ref, ArcWake},
@@ -172,10 +173,10 @@ fn main() {
 
     // Spawn a task to print before and after waiting on a timer.
     spawner.spawn(async {
-        println!("howdy!");
+        println!("{:?} howdy!", Utc::now());
         // Wait for our timer future to complete after two seconds.
         TimerFuture::new(Duration::new(2, 0)).await;
-        println!("done!");
+        println!("{:?} done!", Utc::now());
     });
 
     // Drop the spawner so that our executor knows it is finished and won't
