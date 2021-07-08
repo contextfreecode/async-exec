@@ -5,12 +5,12 @@ var x: i32 = 1;
 
 test "suspend with no resume" {
     var frame = async func();
-    expect(x == 2);
+    try expect(x == 2);
 }
 
 fn func() void {
     x += 1;
-    suspend;
+    suspend {}
     // This line is never reached because the suspend has no matching resume.
     x += 1;
 }
@@ -18,7 +18,7 @@ fn func() void {
 test "resume from suspend" {
     var my_result: i32 = 1;
     _ = async testResumeFromSuspend(&my_result);
-    expect(my_result == 2);
+    try expect(my_result == 2);
 }
 
 fn testResumeFromSuspend(my_result: *i32) void {
