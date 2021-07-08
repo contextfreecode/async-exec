@@ -172,11 +172,19 @@ fn main() {
     let (executor, spawner) = new_executor_and_spawner();
 
     // Spawn a task to print before and after waiting on a timer.
+    println!("{:?} begin", Utc::now());
+    // TODO Make separate counter function.
     spawner.spawn(async {
-        println!("{:?} howdy!", Utc::now());
-        // Wait for our timer future to complete after two seconds.
-        TimerFuture::new(Duration::new(2, 0)).await;
-        println!("{:?} done!", Utc::now());
+        for _ in 0..2 {
+            TimerFuture::new(Duration::from_secs_f64(1.0)).await;
+            println!("{:?} 1 second", Utc::now());
+        }
+    });
+    spawner.spawn(async {
+        for _ in 0..3 {
+            TimerFuture::new(Duration::from_secs_f64(0.6)).await;
+            println!("{:?} 0.6 seconds", Utc::now());
+        }
     });
 
     // Drop the spawner so that our executor knows it is finished and won't
