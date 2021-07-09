@@ -7,24 +7,20 @@ use {
     std::time::Duration,
 };
 
+async fn count(n: i32, interval: f64) {
+    for _ in 0..n {
+        TimerFuture::new(Duration::from_secs_f64(interval)).await;
+        report(&format!("{} seconds", interval));
+    }
+}
+
 fn main() {
     let (executor, spawner) = new_executor_and_spawner();
 
-    // Spawn a task to print before and after waiting on a timer.
+    // Get starting time then run counters.
     report("begin");
-    // TODO Make separate counter function.
-    spawner.spawn(async {
-        for _ in 0..2 {
-            TimerFuture::new(Duration::from_secs_f64(1.0)).await;
-            report("1 second");
-        }
-    });
-    spawner.spawn(async {
-        for _ in 0..3 {
-            TimerFuture::new(Duration::from_secs_f64(0.6)).await;
-            report("0.6 seconds");
-        }
-    });
+    spawner.spawn(count(2, 1.0));
+    spawner.spawn(count(3, 0.6));
 
     // Drop the spawner so that our executor knows it is finished and won't
     // receive more incoming tasks to run.
