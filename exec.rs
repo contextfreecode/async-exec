@@ -14,9 +14,11 @@ use {
         thread,
         time::Duration,
     },
-    // // The timer we wrote in the previous section:
-    // timer_future::TimerFuture,
 };
+
+pub fn report(message: &str) {
+    println!("{:?} {:?} {}", thread::current().id(), Utc::now(), message);
+}
 
 pub struct TimerFuture {
     shared_state: Arc<Mutex<SharedState>>,
@@ -40,6 +42,7 @@ impl TimerFuture {
             // task on which the future was polled, if one exists.
             shared_state.completed = true;
             if let Some(waker) = shared_state.waker.take() {
+                report("wake");
                 waker.wake()
             }
         });
@@ -87,13 +90,13 @@ impl Future for TimerFuture {
 }
 
 /// Task executor that receives tasks off of a channel and runs them.
-struct Executor {
+pub struct Executor {
     ready_queue: Receiver<Arc<Task>>,
 }
 
 /// `Spawner` spawns new futures onto the task channel.
 #[derive(Clone)]
-struct Spawner {
+pub struct Spawner {
     task_sender: SyncSender<Arc<Task>>,
 }
 
@@ -112,7 +115,7 @@ struct Task {
     task_sender: SyncSender<Arc<Task>>,
 }
 
-fn new_executor_and_spawner() -> (Executor, Spawner) {
+pub fn new_executor_and_spawner() -> (Executor, Spawner) {
     // Maximum number of tasks to allow queueing in the channel at once.
     // This is just to make `sync_channel` happy, and wouldn't be present in
     // a real executor.
@@ -122,7 +125,7 @@ fn new_executor_and_spawner() -> (Executor, Spawner) {
 }
 
 impl Spawner {
-    fn spawn(&self, future: impl Future<Output = ()> + 'static + Send) {
+    pub fn spawn(&self, future: impl Future<Output = ()> + 'static + Send) {
         let future = future.boxed();
         let task = Arc::new(Task {
             future: Mutex::new(Some(future)),
@@ -145,7 +148,7 @@ impl ArcWake for Task {
 }
 
 impl Executor {
-    fn run(&self) {
+    pub fn run(&self) {
         while let Ok(task) = self.ready_queue.recv() {
             // Take the future, and if it has not yet completed (is still Some),
             // poll it in an attempt to complete it.
@@ -166,32 +169,4 @@ impl Executor {
             }
         }
     }
-}
-
-fn main() {
-    let (executor, spawner) = new_executor_and_spawner();
-
-    // Spawn a task to print before and after waiting on a timer.
-    println!("{:?} begin", Utc::now());
-    // TODO Make separate counter function.
-    spawner.spawn(async {
-        for _ in 0..2 {
-            TimerFuture::new(Duration::from_secs_f64(1.0)).await;
-            println!("{:?} 1 second", Utc::now());
-        }
-    });
-    spawner.spawn(async {
-        for _ in 0..3 {
-            TimerFuture::new(Duration::from_secs_f64(0.6)).await;
-            println!("{:?} 0.6 seconds", Utc::now());
-        }
-    });
-
-    // Drop the spawner so that our executor knows it is finished and won't
-    // receive more incoming tasks to run.
-    drop(spawner);
-
-    // Run the executor until the task queue is empty.
-    // This will print "howdy!", pause, and then print "done!".
-    executor.run();
 }
