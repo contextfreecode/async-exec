@@ -38,4 +38,5 @@ pub fn main() !void {
         // await frame;
         await @ptrCast(anyframe->void, frame);
     }
+    std.debug.print("{} {}: done\n", .{ thread_id, time_s() });
 }
