@@ -16,13 +16,23 @@ async fn count(n: usize, interval: f64) {
     }
 }
 
-fn main() {
-    let (executor, spawner) = new_executor_and_spawner();
-
+async fn run() {
     // Get starting time then run counters.
     report("begin");
-    spawner.spawn(count(2, 1.0));
-    spawner.spawn(count(3, 0.6));
+    let frames = vec![
+        count(2, 1.0),
+        count(3, 0.6),
+    ];
+    println!("frame size: {}", std::mem::size_of_val(&frames[0]));
+    futures::future::join_all(frames).await;
+    report("end");
+}
+
+fn main() {
+    report("begin all");
+    let (executor, spawner) = new_executor_and_spawner();
+
+    spawner.spawn(run());
     report("spawned");
 
     // Drop the spawner so that our executor knows it is finished and won't
@@ -33,5 +43,5 @@ fn main() {
     // Run the executor until the task queue is empty.
     // This will print "howdy!", pause, and then print "done!".
     executor.run();
-    report("done");
+    report("end all");
 }

@@ -33,6 +33,7 @@ pub fn main() !void {
         async count(2, 1.0),
         async count(3, 0.6),
     };
+    std.debug.print("frame size: {}\n", .{@sizeOf(@TypeOf(frames[0]))});
 
     for (frames) |*frame| {
         await frame;
