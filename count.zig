@@ -29,14 +29,13 @@ pub fn main() !void {
 
     // const frames = try allocator.alloc(@Frame(count), 2);
     // Not needed for arena: // defer allocator.free(frames);
-    const frames = [_]@Frame(count){
+    var frames = [_]@Frame(count){
         async count(2, 1.0),
         async count(3, 0.6),
     };
 
     for (frames) |*frame| {
-        // await frame;
-        await @ptrCast(anyframe->void, frame);
+        await frame;
     }
     std.debug.print("{} {}: done\n", .{ thread_id, time_s() });
 }
