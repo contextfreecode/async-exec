@@ -6,6 +6,7 @@ const std = @import("std");
 const Loop = std.event.Loop;
 
 fn count(n: usize, interval: f64) void {
+    std.debug.print("{} {}: before loop\n", .{ std.Thread.getCurrentId(), time_s() });
     var i: usize = 0;
     const wait_ns = @floatToInt(u64, interval * std.time.ns_per_s);
     while (i < n) : (i += 1) {
