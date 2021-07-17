@@ -2,7 +2,6 @@
 // https://rust-lang.github.io/async-book/02_execution/01_chapter.html
 
 use {
-    chrono::prelude::Utc,
     futures::{
         future::{BoxFuture, Future, FutureExt},
         task::{waker_ref, ArcWake},
@@ -17,8 +16,8 @@ use {
     },
 };
 
-pub fn report(message: &str) {
-    println!("{:?} {:?} {}", thread::current().id(), Utc::now(), message);
+pub fn sleep(duration: Duration) -> TimerFuture {
+    TimerFuture::new(duration)
 }
 
 pub struct TimerFuture {
@@ -43,7 +42,7 @@ impl TimerFuture {
             // task on which the future was polled, if one exists.
             shared_state.completed = true;
             if let Some(waker) = shared_state.waker.take() {
-                report("wake");
+                crate::report("wake");
                 waker.wake()
             }
         });
