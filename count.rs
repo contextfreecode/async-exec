@@ -27,11 +27,11 @@ async fn run() {
     report("end");
 }
 
-// #[async_std::main]
-// async fn main() {
-//     run().await;
-// }
-
-fn main() {
-    block_on(run());
+#[async_std::main]
+async fn main() {
+    run().await;
 }
+
+// fn main() {
+//     block_on(run());
+// }
