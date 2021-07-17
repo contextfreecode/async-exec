@@ -8,10 +8,8 @@ pub fn report(message: &str) {
 }
 
 async fn count(n: usize, interval: f64) {
-    use {
-        async_std::task::sleep,
-        // exec::sleep,
-    };
+    use async_std::task::sleep;
+    // use exec::sleep;
     report("before loop");
     for _ in 0..n {
         sleep(Duration::from_secs_f64(interval)).await;
@@ -33,9 +31,7 @@ async fn main() {
 }
 
 // fn main() {
-//     use {
-//         async_std::task::block_on,
-//         // exec::block_on,
-//     };
+//     use async_std::task::block_on;
+//     // use exec::block_on;
 //     block_on(run());
 // }
