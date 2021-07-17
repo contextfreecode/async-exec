@@ -2,6 +2,7 @@
 // https://rust-lang.github.io/async-book/02_execution/01_chapter.html
 
 use {
+    crate::report,
     futures::{
         future::{BoxFuture, Future, FutureExt},
         task::{waker_ref, ArcWake},
@@ -15,6 +16,22 @@ use {
         time::Duration,
     },
 };
+
+pub fn block_on<F>(future: F)
+where
+    F: Future<Output = ()> + 'static + Send,
+{
+    report("begin all");
+    let (executor, spawner) = new_executor_and_spawner();
+    spawner.spawn(future);
+    report("spawned");
+    // Drop the spawner so that our executor knows it has all the tasks.
+    drop(spawner);
+    report("dropped");
+    // Run the executor until the task queue is empty.
+    executor.run();
+    report("end all");
+}
 
 pub fn sleep(duration: Duration) -> TimerFuture {
     TimerFuture::new(duration)

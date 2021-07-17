@@ -3,7 +3,11 @@
 
 pub mod exec;
 
-use std::time::Duration;
+use {
+    async_std::task::{block_on, sleep},
+    // exec::{block_on, sleep},
+    std::time::Duration,
+};
 
 pub fn report(message: &str) {
     use {chrono::Utc, std::thread};
@@ -11,10 +15,6 @@ pub fn report(message: &str) {
 }
 
 async fn count(n: usize, interval: f64) {
-    use {
-        async_std::task::sleep,
-        // exec::sleep,
-    };
     report("before loop");
     for _ in 0..n {
         sleep(Duration::from_secs_f64(interval)).await;
@@ -30,24 +30,11 @@ async fn run() {
     report("end");
 }
 
-#[async_std::main]
-async fn main() {
-    run().await;
+// #[async_std::main]
+// async fn main() {
+//     run().await;
+// }
+
+fn main() {
+    block_on(run());
 }
-
-// fn main() {
-//     async_std::task::block_on(run());
-// }
-
-// fn main() {
-//     report("begin all");
-//     let (executor, spawner) = exec::new_executor_and_spawner();
-//     spawner.spawn(run());
-//     report("spawned");
-//     // Drop the spawner so that our executor knows it has all the tasks.
-//     drop(spawner);
-//     report("dropped");
-//     // Run the executor until the task queue is empty.
-//     executor.run();
-//     report("end all");
-// }
