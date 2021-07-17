@@ -1,3 +1,4 @@
+count
+env.sh
 target/
 zig-cache/
-env.sh
