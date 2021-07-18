@@ -1,12 +1,13 @@
 // From std/event/loop.zig
 
-pub const io_mode = .evented;
+// pub const io_mode = .evented;
 
 const std = @import("std");
-// See: https://github.com/ziglang/zig/blob/85755c51d529e7d9b406c6bdf69ce0a0f33f3353/lib/std/event/loop.zig#L765
-const sleep = std.event.Loop.instance.?.sleep;
 
 fn count(n: usize, interval: f64) void {
+    // See: https://github.com/ziglang/zig/blob/85755c51d529e7d9b406c6bdf69ce0a0f33f3353/lib/std/event/loop.zig#L765
+    // const sleep = std.event.Loop.instance.?.sleep;
+    const sleep = @import("./exec.zig").sleep;
     std.debug.print("{} {}: before loop\n", .{ std.Thread.getCurrentId(), time_s() });
     var i: usize = 0;
     const wait_ns = @floatToInt(u64, interval * std.time.ns_per_s);
@@ -37,5 +38,7 @@ pub fn run() void {
 }
 
 pub fn main() void {
-    run();
+    const exec = @import("./exec.zig").exec;
+    exec(&async run());
+    // run();
 }
