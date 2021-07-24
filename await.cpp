@@ -6,16 +6,19 @@
 
 template <typename Scheduler>
 requires unifex::scheduler<Scheduler>
-auto sleep(Scheduler scheduler) -> unifex::task<void> {
+auto sleep(Scheduler scheduler, int n) -> unifex::task<void> {
   using namespace std::chrono_literals;
-  co_await unifex::schedule_after(scheduler, 500ms);
+  for (size_t i = 0; i < n; i += 1) {
+    co_await unifex::schedule_after(scheduler, 300ms);
+  }
 }
 
 template <typename Scheduler>
 requires unifex::scheduler<Scheduler>
 auto await_sleep(Scheduler scheduler) -> unifex::task<void> {
-  co_await sleep(scheduler);
-  co_await unifex::when_all(sleep(scheduler), sleep(scheduler));
+  auto task1 = sleep(scheduler, 1);
+  co_await std::move(task1);
+  co_await unifex::when_all(sleep(scheduler, 2), sleep(scheduler, 1));
 }
 
 auto main() -> int {
