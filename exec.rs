@@ -175,6 +175,7 @@ impl Executor {
             // poll it in an attempt to complete it.
             let mut future_slot = task.future.lock().unwrap();
             if let Some(mut future) = future_slot.take() {
+                // println!("future: {}", std::any::type_name_of_val(&future.as_mut().as_mut()));
                 // Create a `LocalWaker` from the task itself
                 let waker = waker_ref(&task);
                 let context = &mut Context::from_waker(&*waker);

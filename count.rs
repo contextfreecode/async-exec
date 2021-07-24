@@ -1,3 +1,5 @@
+// #![feature(type_name_of_val)]
+
 pub mod exec;
 
 use std::time::Duration;
@@ -25,13 +27,15 @@ async fn run() {
     report("end");
 }
 
-#[async_std::main]
-async fn main() {
-    run().await;
-}
-
-// fn main() {
-//     use async_std::task::block_on;
-//     // use exec::block_on;
-//     block_on(run());
+// #[async_std::main]
+// async fn main() {
+//     run().await;
 // }
+
+fn main() {
+    // use async_std::task::block_on;
+    // use exec::block_on;
+    exec::block_on(run());
+    println!("--------------");
+    async_std::task::block_on(run());
+}
