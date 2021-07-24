@@ -10,7 +10,7 @@ pub fn report(message: &str) {
 }
 
 async fn count(n: usize, interval: f64) -> f64 {
-    let now = Instant::now();
+    let start = Instant::now();
     use async_std::task::sleep;
     // use exec::sleep;
     report("before loop");
@@ -18,7 +18,7 @@ async fn count(n: usize, interval: f64) -> f64 {
         sleep(Duration::from_secs_f64(interval)).await;
         report(&format!("{} seconds", interval));
     }
-    return now.elapsed().as_secs_f64();
+    return start.elapsed().as_secs_f64();
 }
 
 async fn run() -> f64 {
@@ -38,9 +38,9 @@ async fn run() -> f64 {
 fn main() {
     // use async_std::task::block_on;
     // use exec::block_on;
-    let value = exec::block_on(run());
-    println!("value: {}", value);
+    let total = exec::block_on(run());
+    println!("total: {}", total);
     println!("--------------");
-    let value = async_std::task::block_on(run());
-    println!("value: {}", value);
+    let total = async_std::task::block_on(run());
+    println!("total: {}", total);
 }
