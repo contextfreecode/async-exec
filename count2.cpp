@@ -17,8 +17,6 @@ auto count(Scheduler &scheduler, int n, double interval) -> unifex::task<void> {
 }
 
 auto main() -> int {
-  // using namespace std::chrono_literals;
-  // unifex::linuxos::io_epoll_context ctx;
   auto ctx = unifex::linuxos::io_epoll_context{};
   unifex::inplace_stop_source stop_source;
   std::thread thread{[&] { ctx.run(stop_source.get_token()); }};
@@ -27,7 +25,6 @@ auto main() -> int {
     thread.join();
   };
   auto scheduler = ctx.get_scheduler();
-  // auto task = scheduler.schedule_at(unifex::now(scheduler) + 100ms);
   auto task = count(scheduler, 2, 1.0);
   std::cout << sizeof(task) << std::endl;
   unifex::sync_wait(std::move(task));

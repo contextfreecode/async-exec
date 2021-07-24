@@ -12,10 +12,10 @@ auto count(size_t n, double interval) -> kuro::task<void> {
 
 auto run() -> kuro::task<void> {
   std::cout << "begin" << std::endl;
-  auto frame1 = count(2, 1.0);
-  auto frame2 = count(3, 0.6);
-  std::cout << "size " << sizeof(frame1) << std::endl;
-  co_await kuro::gather(frame1, frame2);
+  auto task1 = count(2, 1.0);
+  auto task2 = count(3, 0.6);
+  std::cout << "size " << sizeof(task1) << std::endl;
+  co_await kuro::gather(task1, task2);
   std::cout << "end" << std::endl;
 }
 
