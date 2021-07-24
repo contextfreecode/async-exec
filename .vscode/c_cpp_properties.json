@@ -4,6 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder:kuro}/include",
+                "${workspaceFolder:libunifex}/build/include",
+                "${workspaceFolder:libunifex}/include",
                 "${default}"
             ],
             "defines": [],

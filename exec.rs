@@ -83,6 +83,7 @@ struct SharedState {
 impl Future for TimerFuture {
     type Output = ();
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        report("poll");
         // Look at the shared state to see if the timer has already completed.
         let mut shared_state = self.shared_state.lock().unwrap();
         if shared_state.completed {
@@ -143,6 +144,7 @@ pub fn new_executor_and_spawner() -> (Executor, Spawner) {
 
 impl Spawner {
     pub fn spawn(&self, future: impl Future<Output = ()> + 'static + Send) {
+        report("spawn");
         let future = future.boxed();
         let task = Arc::new(Task {
             future: Mutex::new(Some(future)),
@@ -154,6 +156,7 @@ impl Spawner {
 
 impl ArcWake for Task {
     fn wake_by_ref(arc_self: &Arc<Self>) {
+        report("wake_by_ref");
         // Implement `wake` by sending this task back onto the task channel
         // so that it will be polled again by the executor.
         let cloned = arc_self.clone();
@@ -167,6 +170,7 @@ impl ArcWake for Task {
 impl Executor {
     pub fn run(&self) {
         while let Ok(task) = self.ready_queue.recv() {
+            report("got a task");
             // Take the future, and if it has not yet completed (is still Some),
             // poll it in an attempt to complete it.
             let mut future_slot = task.future.lock().unwrap();
@@ -179,6 +183,7 @@ impl Executor {
                 // We can get a `Pin<&mut dyn Future + Send + 'static>`
                 // from it by calling the `Pin::as_mut` method.
                 if let Poll::Pending = future.as_mut().poll(context) {
+                    report("put back");
                     // We're not done processing the future, so put it
                     // back in its task to be run again in the future.
                     *future_slot = Some(future);
