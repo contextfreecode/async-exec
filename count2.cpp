@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstdint>
 #include <iostream>
 #include <unifex/linux/io_epoll_context.hpp>
 #include <unifex/sync_wait.hpp>
@@ -23,11 +24,12 @@ private:
 template <typename Scheduler>
 requires unifex::scheduler<Scheduler>
 auto count(Scheduler scheduler, int n, double interval) -> unifex::task<void> {
-  auto duration = std::chrono::nanoseconds(int64_t(interval * 1e9));
+  auto duration = std::chrono::nanoseconds(std::int64_t(interval * 1e9));
   for (size_t i = 0; i < n; i += 1) {
     // co_await scheduler.schedule_at(unifex::now(scheduler) + duration);
     co_await unifex::schedule_after(scheduler, duration);
-    std::cout << interval << " seconds" << std::endl;
+    std::cout << interval << " seconds on thread " << std::this_thread::get_id()
+              << std::endl;
   }
   std::cout << "done" << std::endl;
 }
@@ -42,11 +44,13 @@ auto run(Scheduler scheduler) -> unifex::task<void> {
 }
 
 auto main() -> int {
+  std::cout << "thread " << std::this_thread::get_id() << std::endl;
   // auto context = EPollContext{};
   auto context = unifex::timed_single_thread_context{};
   auto scheduler = context.get_scheduler();
   auto task = run(scheduler);
   std::cout << sizeof(task) << std::endl;
   unifex::sync_wait(std::move(task));
-  std::cout << "really done" << std::endl;
+  std::cout << "really done on thread " << std::this_thread::get_id()
+            << std::endl;
 }
