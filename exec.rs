@@ -17,9 +17,9 @@ use {
     },
 };
 
-pub fn block_on<F>(future: F)
+pub fn block_on<F, Output>(future: F) -> Output
 where
-    F: Future<Output = ()> + 'static + Send,
+    F: Future<Output = Output> + 'static + Send,
 {
     report("begin all");
     let (executor, spawner) = new_executor_and_spawner();
@@ -29,8 +29,9 @@ where
     drop(spawner);
     report("dropped");
     // Run the executor until the task queue is empty.
-    executor.run();
+    let value = executor.run();
     report("end all");
+    value.unwrap()
 }
 
 pub fn sleep(duration: Duration) -> TimerFuture {
@@ -108,18 +109,18 @@ impl Future for TimerFuture {
 }
 
 /// Task executor that receives tasks off of a channel and runs them.
-pub struct Executor {
-    ready_queue: Receiver<Arc<Task>>,
+pub struct Executor<Output> {
+    ready_queue: Receiver<Arc<Task<Output>>>,
 }
 
 /// `Spawner` spawns new futures onto the task channel.
 #[derive(Clone)]
-pub struct Spawner {
-    task_sender: SyncSender<Arc<Task>>,
+pub struct Spawner<Output> {
+    task_sender: SyncSender<Arc<Task<Output>>>,
 }
 
 /// A future that can reschedule itself to be polled by an `Executor`.
-struct Task {
+struct Task<Output> {
     /// In-progress future that should be pushed to completion.
     ///
     /// The `Mutex` is not necessary for correctness, since we only have
@@ -127,13 +128,13 @@ struct Task {
     /// enough to know that `future` is only mutated from one thread,
     /// so we need to use the `Mutex` to prove thread-safety. A production
     /// executor would not need this, and could use `UnsafeCell` instead.
-    future: Mutex<Option<BoxFuture<'static, ()>>>,
+    future: Mutex<Option<BoxFuture<'static, Output>>>,
 
     /// Handle to place the task itself back onto the task queue.
-    task_sender: SyncSender<Arc<Task>>,
+    task_sender: SyncSender<Arc<Task<Output>>>,
 }
 
-pub fn new_executor_and_spawner() -> (Executor, Spawner) {
+pub fn new_executor_and_spawner<Output>() -> (Executor<Output>, Spawner<Output>) {
     // Maximum number of tasks to allow queueing in the channel at once.
     // This is just to make `sync_channel` happy, and wouldn't be present in
     // a real executor.
@@ -142,8 +143,8 @@ pub fn new_executor_and_spawner() -> (Executor, Spawner) {
     (Executor { ready_queue }, Spawner { task_sender })
 }
 
-impl Spawner {
-    pub fn spawn(&self, future: impl Future<Output = ()> + 'static + Send) {
+impl<Output> Spawner<Output> {
+    pub fn spawn(&self, future: impl Future<Output = Output> + 'static + Send) {
         report("spawn");
         let future = future.boxed();
         let task = Arc::new(Task {
@@ -154,7 +155,7 @@ impl Spawner {
     }
 }
 
-impl ArcWake for Task {
+impl<Output> ArcWake for Task<Output> {
     fn wake_by_ref(arc_self: &Arc<Self>) {
         report("wake_by_ref");
         // Implement `wake` by sending this task back onto the task channel
@@ -167,8 +168,8 @@ impl ArcWake for Task {
     }
 }
 
-impl Executor {
-    pub fn run(&self) {
+impl<Output> Executor<Output> {
+    pub fn run(&self) -> Option<Output> {
         while let Ok(task) = self.ready_queue.recv() {
             report("got a task");
             // Take the future, and if it has not yet completed (is still Some),
@@ -183,13 +184,17 @@ impl Executor {
                 // `Pin<Box<dyn Future<Output = T> + Send + 'static>>`.
                 // We can get a `Pin<&mut dyn Future + Send + 'static>`
                 // from it by calling the `Pin::as_mut` method.
-                if let Poll::Pending = future.as_mut().poll(context) {
-                    report("put back");
-                    // We're not done processing the future, so put it
-                    // back in its task to be run again in the future.
-                    *future_slot = Some(future);
+                match future.as_mut().poll(context) {
+                    Poll::Pending => {
+                        report("put back");
+                        // We're not done processing the future, so put it
+                        // back in its task to be run again in the future.
+                        *future_slot = Some(future);
+                    }
+                    Poll::Ready(value) => return Some(value),
                 }
             }
         }
+        None
     }
 }
