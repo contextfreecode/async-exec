@@ -23,11 +23,11 @@ async fn count(n: usize, interval: f64) -> f64 {
 
 async fn run() -> f64 {
     report("begin");
-    let frames = vec![count(2, 1.0), count(3, 0.6)];
-    println!("frame size: {}", std::mem::size_of_val(&frames[0]));
-    let result = futures::future::join_all(frames).await.iter().sum::<f64>();
+    let futures = vec![count(2, 1.0), count(3, 0.6)];
+    println!("frame size: {}", std::mem::size_of_val(&futures[0]));
+    let total = futures::future::join_all(futures).await.iter().sum::<f64>();
     report("end");
-    result
+    total
 }
 
 // #[async_std::main]
