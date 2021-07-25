@@ -1,5 +1,6 @@
 // From std/event/loop.zig
 
+// https://github.com/ziglang/zig/blob/c6844072ce440f581787bf97909261084a9edc6c/lib/std/io.zig#L8
 pub const io_mode = .evented;
 
 const std = @import("std");
@@ -44,8 +45,8 @@ pub fn run() f64 {
 pub fn main() void {
     // var task = async run();
     // std.debug.print("run size: {}\n", .{@sizeOf(@TypeOf(task))});
-    // exec.block();
-    // var total = nosuspend await task;
+    // exec.runTasks();
+    // const total = await task;
     const total = run();
     std.debug.print("total: {}\n", .{total});
 }

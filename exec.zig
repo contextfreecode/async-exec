@@ -3,7 +3,7 @@ const std = @import("std");
 const Task = struct { frame: anyframe, time: i128 };
 var task_list = [1]?Task{null} ** 10;
 
-pub fn block() void {
+pub fn runTasks() void {
     while (true) {
         const now = std.time.nanoTimestamp();
         var any = false;
