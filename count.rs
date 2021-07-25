@@ -38,7 +38,9 @@ async fn run() -> f64 {
 fn main() {
     // use async_std::task::block_on;
     // use exec::block_on;
-    let total = exec::block_on(run());
+    let future = run();
+    println!("run size: {}", std::mem::size_of_val(&future));
+    let total = exec::block_on(future);
     println!("total: {}", total);
     println!("--------------");
     let total = async_std::task::block_on(run());
