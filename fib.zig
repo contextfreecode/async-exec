@@ -7,7 +7,7 @@ const allocator = std.heap.page_allocator;
 pub fn main() !void {
     const n = 10;
     const ret = try (try Task.run(fib, .{n}));
-    std.debug.warn("fib({}) = {}\n", .{n, ret});
+    std.debug.warn("fib({}) = {}\n", .{ n, ret });
 }
 
 fn fib(n: usize) std.mem.Allocator.Error!usize {
@@ -15,7 +15,7 @@ fn fib(n: usize) std.mem.Allocator.Error!usize {
 
     if (n <= 1)
         return n;
-    
+
     const l = try allocator.create(@Frame(fib));
     defer allocator.destroy(l);
     const r = try allocator.create(@Frame(fib));
@@ -54,7 +54,7 @@ pub const Task = struct {
         while (Task.find()) |runnable_task|
             resume runnable_task.frame;
 
-        return result orelse error.DeadLocked;        
+        return result orelse error.DeadLocked;
     }
 
     var head: ?*Task = null;
