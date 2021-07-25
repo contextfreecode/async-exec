@@ -1,45 +1,32 @@
 const std = @import("std");
 
-const Loop = struct {
-    frames: std.atomic.Queue(anyframe),
-};
+const Task = struct { frame: anyframe, time: i128 };
+var task_list = [1]?Task{null} ** 10;
 
-const Waiter = struct {
-    node: std.atomic.Queue(anyframe).Node,
-    ns: u64,
-};
-
-var loop = Loop {
-    .frames = std.atomic.Queue(anyframe).init(),
-};
-
-pub fn exec(frame: anyframe->void) void {
-    // std.debug.print("Hi: {}\n", .{@sizeOf(@TypeOf(frame))});
-    // nosuspend await frame;
-}
-
-pub fn sleep(ns: u64) !void {
-    suspend {
-        var frame = @frame();
-        std.debug.print("{}\n", .{@sizeOf(@TypeOf(frame))});
-        var waiter = Waiter {.node = undefined, .ns = ns};
-        waiter.node.data = frame;
-        var thread = try std.Thread.spawn(sleepThread, &waiter);
+pub fn block() void {
+    while (true) {
+        const now = std.time.nanoTimestamp();
+        var any = false;
+        for (task_list) |*task| {
+            if (task.* != null) {
+                any = true;
+                if (task.*.?.time <= now) {
+                    var frame = task.*.?.frame;
+                    task.* = null;
+                    resume frame;
+                }
+            }
+        }
+        if (!any) break;
     }
 }
 
-fn sleepThread(waiter: *Waiter) void {
-    const ns = waiter.ns;
-    std.os.nanosleep(ns / std.time.ns_per_s, ns % std.time.ns_per_s);
-    std.debug.print("waited\n", .{});
-    loop.frames.put(&waiter.node);
-}
-
-test "test spawn" {
-    var waiter = Waiter {.node = undefined, .ns = std.time.ns_per_s / 2};
-    var thread = try std.Thread.spawn(sleepThread, &waiter);
-    // try sleep(std.time.ns_per_s / 2);
-    std.os.nanosleep(1, 0);
-    // std.Thread.wait(thread);
-    std.debug.print("done\n", .{});
+pub fn sleep(ns: u64) void {
+    suspend {
+        const slot = for (task_list) |*task| {
+            if (task.* == null) break task;
+        } else unreachable;
+        const time = std.time.nanoTimestamp() + ns;
+        slot.* = Task{ .frame = @frame(), .time = time };
+    }
 }

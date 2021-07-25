@@ -1,14 +1,15 @@
 // From std/event/loop.zig
 
-pub const io_mode = .evented;
+// pub const io_mode = .evented;
 
 const std = @import("std");
+const exec = @import("./exec.zig");
 
 fn count(n: usize, interval: f64) f64 {
     const start = time_s();
     // See: https://github.com/ziglang/zig/blob/85755c51d529e7d9b406c6bdf69ce0a0f33f3353/lib/std/event/loop.zig#L765
-    const sleep = std.event.Loop.instance.?.sleep;
-    // const sleep = @import("./exec.zig").sleep;
+    // const sleep = std.event.Loop.instance.?.sleep;
+    const sleep = exec.sleep;
     std.debug.print("{} {}: before loop\n", .{ std.Thread.getCurrentId(), time_s() });
     var i: usize = 0;
     const wait_ns = @floatToInt(u64, interval * std.time.ns_per_s);
@@ -42,8 +43,12 @@ pub fn run() f64 {
 }
 
 pub fn main() void {
+    // std.debug.print("empty: {}\n", .{exec.loop.frames.isEmpty()});
     // const exec = @import("./exec.zig").exec;
     // exec(&async run());
-    const total = run();
+    var task = async run();
+    exec.block();
+    var total = nosuspend await task;
+    // const total = run();
     std.debug.print("total: {}\n", .{total});
 }
