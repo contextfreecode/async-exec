@@ -4,7 +4,7 @@ const Task = struct { frame: anyframe, time: i128 };
 var task_list = [1]?Task{null} ** 10;
 var task_mutex = std.Thread.Mutex{};
 
-pub fn runTasks() void {
+pub fn runTasks(endless: bool) void {
     while (true) {
         const lock = task_mutex.acquire();
         const now = std.time.nanoTimestamp();
@@ -21,7 +21,7 @@ pub fn runTasks() void {
         } else null;
         lock.release();
         if (frame != null) resume frame.?;
-        if (!any) break;
+        if (!(endless or any)) break;
     }
 }
 
