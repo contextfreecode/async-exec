@@ -4,7 +4,7 @@ const Task = struct { frame: anyframe, time: i128 };
 var task_list = [1]?Task{null} ** 10;
 var task_mutex = std.Thread.Mutex{};
 
-pub fn runTasks(endless: bool) void {
+pub fn runLoop(endless: bool) void {
     while (true) {
         const lock = task_mutex.acquire();
         const now = std.time.nanoTimestamp();

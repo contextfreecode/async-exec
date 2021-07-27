@@ -7,28 +7,28 @@ const std = @import("std");
 const exec = @import("./exec.zig");
 
 fn count(n: usize, interval: f64) f64 {
-    const start = time_s();
+    const start = timeSec();
     // const sleep = std.event.Loop.instance.?.sleep;
     const sleep = exec.sleep;
-    std.debug.print("{} {}: before loop\n", .{ std.Thread.getCurrentId(), time_s() });
+    std.debug.print("{} {}: before loop\n", .{ std.Thread.getCurrentId(), timeSec() });
     var i: usize = 0;
     const wait_ns = @floatToInt(u64, interval * std.time.ns_per_s);
     while (i < n) : (i += 1) {
         sleep(wait_ns);
         const thread_id = std.Thread.getCurrentId();
-        std.debug.print("{} {}: {} seconds\n", .{ thread_id, time_s(), interval });
+        std.debug.print("{} {}: {} seconds\n", .{ thread_id, timeSec(), interval });
     }
-    return time_s() - start;
+    return timeSec() - start;
 }
 
-fn time_s() f64 {
+fn timeSec() f64 {
     return @intToFloat(f64, std.time.nanoTimestamp()) /
         @intToFloat(f64, std.time.ns_per_s);
 }
 
 pub fn run() f64 {
     const thread_id = std.Thread.getCurrentId();
-    std.debug.print("{} {}: begin\n", .{ thread_id, time_s() });
+    std.debug.print("{} {}: begin\n", .{ thread_id, timeSec() });
     var frames = [_]@Frame(count){
         async count(2, 1.0),
         async count(3, 0.6),
@@ -38,16 +38,16 @@ pub fn run() f64 {
     for (frames) |*frame| {
         total += await frame;
     }
-    std.debug.print("{} {}: done\n", .{ thread_id, time_s() });
+    std.debug.print("{} {}: done\n", .{ thread_id, timeSec() });
     return total;
 }
 
 pub fn main() !void {
     // var task = async run();
     // std.debug.print("run size: {}\n", .{@sizeOf(@TypeOf(task))});
-    // exec.runTasks(false);
+    // exec.runLoop(false);
     // const total = await task;
-    _ = try std.Thread.spawn(exec.runTasks, true);
+    _ = try std.Thread.spawn(exec.runLoop, true);
     const total = run();
     std.debug.print("total: {}\n", .{total});
 }
