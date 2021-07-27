@@ -1,9 +1,10 @@
-#include "exec.hpp"
 #include <chrono>
 #include <iostream>
 #include <kuro/kuro.hpp>
 #include <thread>
 #include <vector>
+
+#include "exec.hpp"
 
 // namespace kuro = exec;
 

@@ -17,15 +17,15 @@ struct EPollContext {
 
   auto get_scheduler() { return context.get_scheduler(); }
 
-private:
+ private:
   unifex::linuxos::io_epoll_context context;
   unifex::inplace_stop_source stop_source;
   std::thread thread{[&] { context.run(stop_source.get_token()); }};
 };
 
 template <typename Scheduler>
-requires unifex::scheduler<Scheduler>
-auto count(Scheduler scheduler, int n, double interval)
+requires unifex::scheduler<Scheduler> auto count(Scheduler scheduler, int n,
+                                                 double interval)
     -> unifex::task<double> {
   auto start = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::nanoseconds(std::int64_t(interval * 1e9));
@@ -44,8 +44,8 @@ auto get(std::variant<std::tuple<Value>> wrapped) -> Value {
 }
 
 template <typename Scheduler>
-requires unifex::scheduler<Scheduler>
-auto run(Scheduler scheduler) -> unifex::task<double> {
+requires unifex::scheduler<Scheduler> auto run(Scheduler scheduler)
+    -> unifex::task<double> {
   std::cout << thread_id() << " begin" << std::endl;
   auto task1 = count(scheduler, 2, 1.0);
   auto task2 = count(scheduler, 3, 0.6);

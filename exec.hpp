@@ -6,8 +6,9 @@ namespace exec {
 
 namespace detail {
 
-template <typename Promise> class unique_coroutine_handle {
-public:
+template <typename Promise>
+class unique_coroutine_handle {
+ public:
   unique_coroutine_handle() noexcept = default;
 
   unique_coroutine_handle(std::coroutine_handle<Promise> h)
@@ -21,7 +22,7 @@ public:
 
   operator std::coroutine_handle<Promise>() const { return handle(); }
 
-private:
+ private:
   std::coroutine_handle<Promise> handle() const noexcept {
     return std::coroutine_handle<Promise>::from_address(m_ptr.get());
   }
@@ -36,10 +37,11 @@ private:
   std::unique_ptr<void, destroyer> m_ptr;
 };
 
-template <typename T> class return_value_promise {
+template <typename T>
+class return_value_promise {
   enum class promise_state { empty, data, exception };
 
-public:
+ public:
   return_value_promise(){};
   ~return_value_promise() {
     if (m_state == promise_state::data) {
@@ -53,7 +55,7 @@ public:
     m_state = promise_state::exception;
   }
 
-protected:
+ protected:
   T &get_data() {
     if (m_state == promise_state::data) {
       return m_data;
@@ -69,7 +71,7 @@ protected:
     m_state = promise_state::data;
   }
 
-private:
+ private:
   promise_state m_state = promise_state::empty;
   union {
     T m_data;
@@ -77,21 +79,22 @@ private:
   };
 };
 
-template <typename T> class value_promise : public return_value_promise<T> {
-public:
+template <typename T>
+class value_promise : public return_value_promise<T> {
+ public:
   T result() { return std::move(this->get_data()); }
   void return_value(T value) noexcept { this->set_data(std::move(value)); }
 };
 
 template <typename T>
 class reference_promise : public return_value_promise<T *> {
-public:
+ public:
   T &result() { return *this->get_data(); }
   void return_value(T &value) noexcept { this->set_data(&value); }
 };
 
 class void_promise {
-public:
+ public:
   void result() const {
     if (m_except) {
       std::rethrow_exception(m_except);
@@ -100,26 +103,35 @@ public:
   void return_void() noexcept {}
   void unhandled_exception() { m_except = std::current_exception(); }
 
-private:
+ private:
   std::exception_ptr m_except = nullptr;
 };
 
-template <typename T> struct base_promise { using type = value_promise<T>; };
+template <typename T>
+struct base_promise {
+  using type = value_promise<T>;
+};
 
-template <typename T> struct base_promise<T &> {
+template <typename T>
+struct base_promise<T &> {
   using type = reference_promise<T>;
 };
 
-template <> struct base_promise<void> { using type = void_promise; };
+template <>
+struct base_promise<void> {
+  using type = void_promise;
+};
 
-template <typename T> using base_promise_t = base_promise<T>::type;
+template <typename T>
+using base_promise_t = base_promise<T>::type;
 
-} // namespace detail
+}  // namespace detail
 
-template <typename T> class task {
-public:
+template <typename T>
+class task {
+ public:
   class promise_type final : public detail::base_promise_t<T> {
-  public:
+   public:
     task<T> get_return_object() noexcept {
       return task(std::coroutine_handle<promise_type>::from_promise(*this));
     }
@@ -129,8 +141,8 @@ public:
     auto final_suspend() const noexcept {
       struct awaitable {
         bool await_ready() noexcept { return false; }
-        std::coroutine_handle<>
-        await_suspend(std::coroutine_handle<promise_type> handle) noexcept {
+        std::coroutine_handle<> await_suspend(
+            std::coroutine_handle<promise_type> handle) noexcept {
           auto continuation = handle.promise().m_continuation;
           if (continuation) {
             return continuation;
@@ -146,7 +158,7 @@ public:
       m_continuation = continuation;
     }
 
-  private:
+   private:
     std::coroutine_handle<> m_continuation;
   };
 
@@ -159,13 +171,13 @@ public:
 
       bool await_ready() const noexcept { return m_handle.done(); }
 
-      std::coroutine_handle<>
-      await_suspend(std::coroutine_handle<> parent_handle) noexcept {
+      std::coroutine_handle<> await_suspend(
+          std::coroutine_handle<> parent_handle) noexcept {
         m_handle.promise().set_continuation(parent_handle);
         return m_handle;
       }
 
-    private:
+     private:
       std::coroutine_handle<promise_type> m_handle;
     };
 
@@ -174,10 +186,36 @@ public:
 
   bool done() const noexcept { return m_handle.done(); }
 
-private:
+ private:
   task(std::coroutine_handle<promise_type> handle) : m_handle(handle) {}
 
   detail::unique_coroutine_handle<promise_type> m_handle;
 };
 
-} // namespace exec
+class sleep_for {
+ public:
+  sleep_for(double d)
+      : duration(d)
+  // m_fd(timerfd_create(CLOCK_MONOTONIC, 0)), m_time(static_cast<timespec>(d))
+  {}
+  bool await_ready() const noexcept {
+    // return m_time.tv_sec < 0 || (m_time.tv_sec == 0 && m_time.tv_nsec == 0);
+    return true;
+  }
+  void await_resume() const noexcept {}
+  void await_suspend(std::coroutine_handle<> handle) noexcept {
+    // itimerspec tspec{.it_value=m_time};
+    // timerfd_settime(m_fd.get(), 0, &tspec, nullptr);
+    // event_loop::add_reader(m_fd.get(), handle);
+  }
+  void await_cancel() noexcept {
+    // event_loop::remove_fd(m_fd.get());
+  }
+
+ private:
+  // detail::unique_fd m_fd;
+  // timespec m_time;
+  double duration;
+};
+
+}  // namespace exec
