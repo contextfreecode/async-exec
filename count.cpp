@@ -1,8 +1,11 @@
+#include "exec.hpp"
 #include <chrono>
 #include <iostream>
 #include <kuro/kuro.hpp>
 #include <thread>
 #include <vector>
+
+// namespace kuro = exec;
 
 auto thread_id() { return std::this_thread::get_id(); }
 
