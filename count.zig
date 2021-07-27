@@ -8,8 +8,8 @@ const exec = @import("./exec.zig");
 
 fn count(n: usize, interval: f64) f64 {
     const start = timeSec();
-    // const sleep = std.event.Loop.instance.?.sleep;
-    const sleep = exec.sleep;
+    const sleep = std.event.Loop.instance.?.sleep;
+    // const sleep = exec.sleep;
     std.debug.print("{} {}: before loop\n", .{ std.Thread.getCurrentId(), timeSec() });
     var i: usize = 0;
     const wait_ns = @floatToInt(u64, interval * std.time.ns_per_s);
@@ -47,7 +47,7 @@ pub fn main() !void {
     // std.debug.print("run size: {}\n", .{@sizeOf(@TypeOf(task))});
     // exec.runLoop(false);
     // const total = await task;
-    _ = try std.Thread.spawn(exec.runLoop, true);
+    // _ = try std.Thread.spawn(exec.runLoop, true);
     const total = run();
     std.debug.print("total: {}\n", .{total});
 }
