@@ -13,8 +13,9 @@ pub fn main() !void {
 fn fib(n: usize) std.mem.Allocator.Error!usize {
     Task.yield();
 
-    if (n <= 1)
+    if (n <= 1) {
         return n;
+    }
 
     const l = try allocator.create(@Frame(fib));
     defer allocator.destroy(l);
@@ -51,8 +52,9 @@ pub const Task = struct {
         var result: ?ReturnTypeOf(asyncFn) = null;
         var frame = async Wrapper.entry(args, &task, &result);
 
-        while (Task.find()) |runnable_task|
+        while (Task.find()) |runnable_task| {
             resume runnable_task.frame;
+        }
 
         return result orelse error.DeadLocked;
     }
