@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "promise.hpp"
-#include "shared_task.hpp"
 #include "task.hpp"
 #include "task_executor.hpp"
 #include "unique_fd.hpp"
@@ -74,9 +73,7 @@ class event_loop {
     auto exec = [](task<T>& t) -> detail::task_executor_return<T> {
       co_return co_await t;
     }(root_task);
-
     io_loop(root_task);
-
     if constexpr (std::is_void_v<T>) {
       exec.m_handle.destroy();
     } else {
@@ -85,34 +82,24 @@ class event_loop {
       return result;
     }
   }
-  template <typename T>
-  static T run(shared_task<T> root_task) {
-    auto nonshared_root_task = [](shared_task<T>& t) -> task<T> {
-      if constexpr (std::is_void_v<T>) {
-        co_await t;
-      } else if constexpr (std::is_reference_v<T>) {
-        co_return co_await t;
-      } else {
-        co_return std::move(co_await t);
-      }
-    }(root_task);
 
-    return run(std::move(nonshared_root_task));
-  }
   static void add_reader(int fd, std::coroutine_handle<> handle) {
     epoll_event ev{.events = EPOLLIN, .data = {.fd = fd}};
     epoll_ctl(instance().m_epoll_fd.get(), EPOLL_CTL_ADD, fd, &ev);
     instance().m_handles[fd] = handle;
   }
+
   static void add_writer(int fd, std::coroutine_handle<> handle) {
     epoll_event ev{.events = EPOLLOUT, .data = {.fd = fd}};
     epoll_ctl(instance().m_epoll_fd.get(), EPOLL_CTL_ADD, fd, &ev);
     instance().m_handles[fd] = handle;
   }
+
   static void remove_fd(int fd) {
     instance().m_handles.erase(fd);
     epoll_ctl(instance().m_epoll_fd.get(), EPOLL_CTL_DEL, fd, nullptr);
   }
+
   static void add_signal_handler(int signal, std::function<void()> handler) {
     detail::check_error(sigaddset(&instance().m_sigmask, signal));
     detail::check_error(
@@ -121,6 +108,7 @@ class event_loop {
         signalfd(instance().m_signal_fd.get(), &instance().m_sigmask, 0));
     instance().m_signal_handlers[signal] = std::move(handler);
   }
+
   static void remove_signal_handler(int signal) {
     detail::check_error(sigdelset(&instance().m_sigmask, signal));
     detail::check_error(
@@ -135,15 +123,6 @@ class event_loop {
     return [](task<T> t) -> active_task<T> {
       co_return co_await t;
     }(std::move(concurrent_task));
-  }
-
-  template <typename T>
-  static auto create_task(shared_task<T> concurrent_task) {
-    [](shared_task<T> t) -> detail::task_executor {
-      co_await t;
-    }(concurrent_task);
-
-    return concurrent_task;
   }
 
  private:
