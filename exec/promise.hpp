@@ -56,13 +56,6 @@ class value_promise : public return_value_promise<T> {
 };
 
 template <typename T>
-class shared_value_promise : public return_value_promise<T> {
- public:
-  T& result() { return this->get_data(); }
-  void return_value(T value) noexcept { this->set_data(std::move(value)); }
-};
-
-template <typename T>
 class reference_promise : public return_value_promise<T*> {
  public:
   T& result() { return *this->get_data(); }
@@ -100,23 +93,5 @@ struct base_promise<void> {
 
 template <typename T>
 using base_promise_t = base_promise<T>::type;
-
-template <typename T>
-struct base_shared_promise {
-  using type = shared_value_promise<T>;
-};
-
-template <typename T>
-struct base_shared_promise<T&> {
-  using type = reference_promise<T>;
-};
-
-template <>
-struct base_shared_promise<void> {
-  using type = void_promise;
-};
-
-template <typename T>
-using base_shared_promise_t = base_shared_promise<T>::type;
 
 }  // namespace kuro::detail
