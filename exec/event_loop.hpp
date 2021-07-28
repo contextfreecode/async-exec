@@ -89,33 +89,9 @@ class event_loop {
     instance().m_handles[fd] = handle;
   }
 
-  static void add_writer(int fd, std::coroutine_handle<> handle) {
-    epoll_event ev{.events = EPOLLOUT, .data = {.fd = fd}};
-    epoll_ctl(instance().m_epoll_fd.get(), EPOLL_CTL_ADD, fd, &ev);
-    instance().m_handles[fd] = handle;
-  }
-
   static void remove_fd(int fd) {
     instance().m_handles.erase(fd);
     epoll_ctl(instance().m_epoll_fd.get(), EPOLL_CTL_DEL, fd, nullptr);
-  }
-
-  static void add_signal_handler(int signal, std::function<void()> handler) {
-    detail::check_error(sigaddset(&instance().m_sigmask, signal));
-    detail::check_error(
-        sigprocmask(SIG_SETMASK, &instance().m_sigmask, nullptr));
-    detail::check_error(
-        signalfd(instance().m_signal_fd.get(), &instance().m_sigmask, 0));
-    instance().m_signal_handlers[signal] = std::move(handler);
-  }
-
-  static void remove_signal_handler(int signal) {
-    detail::check_error(sigdelset(&instance().m_sigmask, signal));
-    detail::check_error(
-        sigprocmask(SIG_SETMASK, &instance().m_sigmask, nullptr));
-    detail::check_error(
-        signalfd(instance().m_signal_fd.get(), &instance().m_sigmask, 0));
-    instance().m_signal_handlers.erase(signal);
   }
 
   template <typename T>
