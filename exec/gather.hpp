@@ -79,29 +79,11 @@ class gather_impl {
   std::tuple<detail::awaitable_container<T>...> m_await;
 };
 
-template <typename... T>
-class gather_cancel_impl : public gather_impl<T...> {
- public:
-  gather_cancel_impl(T... args) : gather_impl<T...>(std::forward<T>(args)...) {}
-
-  void await_cancel() noexcept {
-    constexpr_for<0UL, std::tuple_size_v<decltype(this->m_await)>, 1UL>(
-        [this](auto i) mutable {
-          std::get<i.value>(this->m_await).get().await_cancel();
-        });
-  }
-};
-
 }  // namespace detail
 
 template <awaitable... T>
 auto gather(T&&... args) {
-  constexpr bool cancel = (cancellable<T> && ...);
-  if constexpr (cancel) {
-    return detail::gather_cancel_impl<T...>(std::forward<T>(args)...);
-  } else {
-    return detail::gather_impl<T...>(std::forward<T>(args)...);
-  }
+  return detail::gather_impl<T...>(std::forward<T>(args)...);
 }
 
 }  // namespace kuro

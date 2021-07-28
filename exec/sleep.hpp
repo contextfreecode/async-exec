@@ -51,7 +51,6 @@ class sleep_for {
     timerfd_settime(m_fd.get(), 0, &tspec, nullptr);
     event_loop::add_reader(m_fd.get(), handle);
   }
-  void await_cancel() noexcept { event_loop::remove_fd(m_fd.get()); }
 
  private:
   detail::unique_fd m_fd;

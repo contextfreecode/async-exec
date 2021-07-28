@@ -112,13 +112,4 @@ concept awaitable = requires(detail::base_awaitable_t<T> a) {
   {a.await_resume()};
 };
 
-template <typename T>
-concept cancellable = requires(detail::base_awaitable_t<T> a) {
-  { a.await_cancel() }
-  ->std::same_as<void>;
-};
-
-template <typename T>
-concept cancellable_awaitable = awaitable<T>&& cancellable<T>;
-
 }  // namespace kuro
