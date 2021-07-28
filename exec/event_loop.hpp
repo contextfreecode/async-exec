@@ -94,21 +94,10 @@ class event_loop {
     epoll_ctl(instance().m_epoll_fd.get(), EPOLL_CTL_DEL, fd, nullptr);
   }
 
-  template <typename T>
-  static auto create_task(task<T> concurrent_task) {
-    return [](task<T> t) -> active_task<T> {
-      co_return co_await t;
-    }(std::move(concurrent_task));
-  }
-
  private:
   event_loop() {
     m_epoll_fd = epoll_create1(0);
     m_events.resize(32);
-    detail::check_error(sigemptyset(&m_sigmask));
-    m_signal_fd = detail::check_fd(signalfd(-1, &m_sigmask, 0));
-    epoll_event ev{.events = EPOLLIN, .data = {.fd = m_signal_fd.get()}};
-    epoll_ctl(m_epoll_fd.get(), EPOLL_CTL_ADD, m_signal_fd.get(), &ev);
   }
 
   template <typename T>
@@ -119,18 +108,9 @@ class event_loop {
                      instance().m_events.size(), -1);
       for (int i = 0; i < n_ev; ++i) {
         int fd = instance().m_events[i].data.fd;
-        if (fd == instance().m_signal_fd.get()) {
-          signalfd_siginfo info;
-          if (read(fd, &info, sizeof(info)) != sizeof(info)) {
-            throw std::runtime_error("Failed to read signal handler info");
-          }
-
-          instance().m_signal_handlers[info.ssi_signo]();
-        } else {
-          auto h = instance().m_handles[fd];
-          remove_fd(fd);
-          h.resume();
-        }
+        auto h = instance().m_handles[fd];
+        remove_fd(fd);
+        h.resume();
       }
     }
   }
@@ -143,9 +123,6 @@ class event_loop {
   detail::unique_fd m_epoll_fd;
   std::vector<epoll_event> m_events;
   std::unordered_map<int, std::coroutine_handle<>> m_handles;
-  sigset_t m_sigmask;
-  detail::unique_fd m_signal_fd;
-  std::unordered_map<int, std::function<void()>> m_signal_handlers;
 };
 
 }  // namespace kuro
