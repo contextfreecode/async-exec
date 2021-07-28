@@ -136,6 +136,22 @@ class awaitable_container {
 };
 
 template <typename T>
+struct get_base_awaitable_impl {};
+
+template <member_co_awaitable T>
+struct get_base_awaitable_impl<T> {
+  using Type = decltype(std::declval<T>().operator co_await());
+};
+
+template <non_member_co_awaitable T>
+struct get_base_awaitable_impl<T> {
+  using Type = decltype(operator co_await(std::declval<T>()));
+};
+
+template <typename T>
+using get_base_awaitable_t = get_base_awaitable_impl<T>::Type;
+
+template <typename T>
 concept member_co_awaitable = requires(T a) {
   a.operator co_await();
 };
@@ -165,6 +181,103 @@ class awaitable_container<T> {
 template <typename T>
 using non_void_awaited_t =
     std::conditional_t<std::is_void_v<awaited_t<T>>, void_t, awaited_t<T>>;
+
+template <typename... T>
+class gather_impl {
+ public:
+  gather_impl(T... args)
+      : m_await(detail::awaitable_container<T>(std::forward<T>(args))...) {}
+
+  bool await_ready() noexcept {
+    std::size_t n_ready = 0;
+    constexpr_for<0UL, std::tuple_size_v<decltype(m_await)>, 1UL>(
+        [this, n_ready](auto i) mutable {
+          n_ready += std::get<i.value>(m_await).get().await_ready();
+        });
+
+    return n_ready == std::tuple_size_v<decltype(m_await)>;
+  }
+  void await_suspend(std::coroutine_handle<> handle) noexcept {
+    std::coroutine_handle<> inc_handle =
+        [this](std::coroutine_handle<> resume) -> detail::task_executor {
+      for (auto i = 0UL; i < std::tuple_size_v<decltype(m_await)>; ++i) {
+        co_await std::suspend_always{};
+      }
+      resume.resume();
+    }(handle)
+                                                      .m_handle;
+
+    constexpr_for<0UL, std::tuple_size_v<decltype(m_await)>, 1UL>(
+        [this, inc_handle](auto i) {
+          using S = decltype(std::get<i.value>(m_await).get().await_suspend(
+              inc_handle));
+          if constexpr (std::is_void_v<S>) {
+            std::get<i.value>(m_await).get().await_suspend(inc_handle);
+          } else if constexpr (std::is_same_v<S, bool>) {
+            if (!std::get<i.value>(m_await).get().await_suspend(inc_handle)) {
+              inc_handle.resume();
+            }
+          } else {
+            std::get<i.value>(m_await).get().await_suspend(inc_handle).resume();
+          }
+        });
+  }
+  auto await_resume() noexcept {
+    return std::apply(
+        [](auto &&...args) -> std::tuple<detail::non_void_awaited_t<T>...> {
+          return {non_void_resume(args.get())...};
+        },
+        m_await);
+  }
+
+ protected:
+  template <typename U>
+  static decltype(auto) non_void_resume(U &await) {
+    if constexpr (std::is_void_v<decltype(await.await_resume())>) {
+      await.await_resume();
+      return void_t{};
+    } else {
+      return await.await_resume();
+    }
+  }
+
+  template <auto Start, auto End, auto Inc, class F>
+  static constexpr void constexpr_for(F &&f) {
+    if constexpr (Start < End) {
+      f(std::integral_constant<decltype(Start), Start>());
+      constexpr_for<Start + Inc, End, Inc>(f);
+    }
+  }
+
+  std::tuple<detail::awaitable_container<T>...> m_await;
+};
+
+template <typename T>
+using base_awaitable_t =
+    decltype(base_awaitable(std::declval<std::remove_reference_t<T>>()));
+
+template <typename T>
+using awaited_t = decltype(std::declval<base_awaitable_t<T>>().await_resume());
+
+template <typename T>
+concept await_suspend_returnable = std::same_as<T, bool> ||
+    std::same_as<T, void> || std::same_as<T, std::coroutine_handle<>>;
+
+template <typename T>
+class task_executor_return {
+ public:
+  class promise_type final : public base_promise_t<T> {
+   public:
+    task_executor_return<T> get_return_object() noexcept {
+      return task_executor_return(
+          std::coroutine_handle<promise_type>::from_promise(*this));
+    }
+    std::suspend_never initial_suspend() const noexcept { return {}; }
+    std::suspend_always final_suspend() const noexcept { return {}; }
+  };
+
+  std::coroutine_handle<promise_type> m_handle;
+};
 
 }  // namespace detail
 
@@ -259,74 +372,38 @@ class sleep_for {
   double duration;
 };
 
-template <typename... T>
-class gather {
+template <typename T>
+concept awaitable = requires(detail::base_awaitable_t<T> a) {
+  { a.await_ready() } -> std::same_as<bool>;
+  {
+    a.await_suspend(std::coroutine_handle<>{})
+    } -> detail::await_suspend_returnable<>;
+  {a.await_resume()};
+};
+
+template <awaitable... T>
+auto gather(T &&...args) {
+  return detail::gather_impl<T...>(std::forward<T>(args)...);
+}
+
+class event_loop {
  public:
-  gather(T... args)
-      : m_await(detail::awaitable_container<T>(std::forward<T>(args))...) {}
+  template <typename T>
+  static T run(task<T> root_task) {
+    auto exec = [](task<T> &t) -> detail::task_executor_return<T> {
+      co_return co_await t;
+    }(root_task);
 
-  bool await_ready() noexcept {
-    std::size_t n_ready = 0;
-    constexpr_for<0UL, std::tuple_size_v<decltype(m_await)>, 1UL>(
-        [this, n_ready](auto i) mutable {
-          n_ready += std::get<i.value>(m_await).get().await_ready();
-        });
+    // io_loop(root_task);
 
-    return n_ready == std::tuple_size_v<decltype(m_await)>;
-  }
-  void await_suspend(std::coroutine_handle<> handle) noexcept {
-    std::coroutine_handle<> inc_handle =
-        [this](std::coroutine_handle<> resume) -> detail::task_executor {
-      for (auto i = 0UL; i < std::tuple_size_v<decltype(m_await)>; ++i) {
-        co_await std::suspend_always{};
-      }
-      resume.resume();
-    }(handle)
-                                                      .m_handle;
-
-    constexpr_for<0UL, std::tuple_size_v<decltype(m_await)>, 1UL>(
-        [this, inc_handle](auto i) {
-          using S = decltype(std::get<i.value>(m_await).get().await_suspend(
-              inc_handle));
-          if constexpr (std::is_void_v<S>) {
-            std::get<i.value>(m_await).get().await_suspend(inc_handle);
-          } else if constexpr (std::is_same_v<S, bool>) {
-            if (!std::get<i.value>(m_await).get().await_suspend(inc_handle)) {
-              inc_handle.resume();
-            }
-          } else {
-            std::get<i.value>(m_await).get().await_suspend(inc_handle).resume();
-          }
-        });
-  }
-  auto await_resume() noexcept {
-    return std::apply(
-        [](auto &&...args) -> std::tuple<detail::non_void_awaited_t<T>...> {
-          return {non_void_resume(args.get())...};
-        },
-        m_await);
-  }
-
- protected:
-  template <typename U>
-  static decltype(auto) non_void_resume(U &await) {
-    if constexpr (std::is_void_v<decltype(await.await_resume())>) {
-      await.await_resume();
-      return void_t{};
+    if constexpr (std::is_void_v<T>) {
+      exec.m_handle.destroy();
     } else {
-      return await.await_resume();
+      T result = exec.m_handle.promise().result();
+      exec.m_handle.destroy();
+      return result;
     }
   }
-
-  template <auto Start, auto End, auto Inc, class F>
-  static constexpr void constexpr_for(F &&f) {
-    if constexpr (Start < End) {
-      f(std::integral_constant<decltype(Start), Start>());
-      constexpr_for<Start + Inc, End, Inc>(f);
-    }
-  }
-
-  std::tuple<detail::awaitable_container<T>...> m_await;
 };
 
 }  // namespace exec
