@@ -1,10 +1,15 @@
 #pragma once
 
+#include <system_error>
 #include <unistd.h>
 
-#include "error.hpp"
-
 namespace kuro::detail {
+
+inline void check_error(int ret_val) {
+  if (ret_val == -1) {
+    throw std::system_error(errno, std::system_category());
+  }
+}
 
 class unique_fd {
  public:

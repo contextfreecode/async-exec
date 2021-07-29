@@ -19,54 +19,6 @@
 namespace kuro {
 
 class event_loop {
-  template <typename T>
-  class active_task {
-   public:
-    class promise_type final : public detail::base_promise_t<T> {
-     public:
-      active_task<T> get_return_object() noexcept {
-        return active_task(
-            std::coroutine_handle<promise_type>::from_promise(*this));
-      }
-      std::suspend_never initial_suspend() const noexcept { return {}; }
-      auto final_suspend() const noexcept {
-        struct awaitable {
-          bool await_ready() noexcept { return false; }
-          std::coroutine_handle<> await_suspend(
-              std::coroutine_handle<promise_type> handle) noexcept {
-            auto continuation = handle.promise().m_continuation;
-            if (continuation) {
-              return continuation;
-            }
-
-            return std::noop_coroutine();
-          }
-          void await_resume() noexcept {}
-        };
-        return awaitable{};
-      }
-      void set_continuation(std::coroutine_handle<> continuation) {
-        m_continuation = continuation;
-      }
-
-     private:
-      std::coroutine_handle<> m_continuation;
-    };
-
-    T await_resume() { return m_handle.promise().result(); }
-    bool await_ready() const noexcept { return m_handle.done(); }
-    void await_suspend(std::coroutine_handle<> parent_handle) noexcept {
-      m_handle.promise().set_continuation(parent_handle);
-    }
-    bool done() const noexcept { return m_handle.done(); }
-
-   private:
-    active_task(std::coroutine_handle<promise_type> handle)
-        : m_handle(handle) {}
-
-    detail::unique_coroutine_handle<promise_type> m_handle;
-  };
-
  public:
   template <typename T>
   static T run(task<T> root_task) {

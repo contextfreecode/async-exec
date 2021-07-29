@@ -11,7 +11,8 @@ class return_value_promise {
   enum class promise_state { empty, data, exception };
 
  public:
-  return_value_promise(){};
+  return_value_promise() {}
+
   ~return_value_promise() {
     if (m_state == promise_state::data) {
       m_data.~T();
@@ -19,6 +20,7 @@ class return_value_promise {
       m_except.~exception_ptr();
     }
   }
+
   void unhandled_exception() {
     m_except = std::current_exception();
     m_state = promise_state::exception;
