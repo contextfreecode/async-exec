@@ -24,6 +24,7 @@ class gather_impl {
 
     return n_ready == std::tuple_size_v<decltype(m_await)>;
   }
+
   void await_suspend(std::coroutine_handle<> handle) noexcept {
     std::coroutine_handle<> inc_handle =
         [this](std::coroutine_handle<> resume) -> detail::task_executor {
@@ -32,7 +33,6 @@ class gather_impl {
           }
           resume.resume();
         }(handle).handle;
-
     constexpr_for<0UL, std::tuple_size_v<decltype(m_await)>, 1UL>(
         [this, inc_handle](auto i) {
           using S = decltype(
@@ -48,6 +48,7 @@ class gather_impl {
           }
         });
   }
+
   auto await_resume() noexcept {
     return std::apply(
         [](auto&&... args) -> std::tuple<detail::non_void_awaited_t<T>...> {
