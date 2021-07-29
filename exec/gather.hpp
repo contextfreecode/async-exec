@@ -27,12 +27,11 @@ class gather_impl {
   void await_suspend(std::coroutine_handle<> handle) noexcept {
     std::coroutine_handle<> inc_handle =
         [this](std::coroutine_handle<> resume) -> detail::task_executor {
-      for (auto i = 0UL; i < std::tuple_size_v<decltype(m_await)>; ++i) {
-        co_await std::suspend_always{};
-      }
-      resume.resume();
-    }(handle)
-                                                      .m_handle;
+          for (auto i = 0UL; i < std::tuple_size_v<decltype(m_await)>; ++i) {
+            co_await std::suspend_always{};
+          }
+          resume.resume();
+        }(handle).handle;
 
     constexpr_for<0UL, std::tuple_size_v<decltype(m_await)>, 1UL>(
         [this, inc_handle](auto i) {

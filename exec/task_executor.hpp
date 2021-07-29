@@ -20,7 +20,7 @@ class task_executor {
     void unhandled_exception() {}
   };
 
-  std::coroutine_handle<promise_type> m_handle;
+  std::coroutine_handle<promise_type> handle;
 };
 
 template <typename T>
@@ -36,7 +36,7 @@ class task_executor_return {
     std::suspend_always final_suspend() const noexcept { return {}; }
   };
 
-  std::coroutine_handle<promise_type> m_handle;
+  std::coroutine_handle<promise_type> handle;
 };
 
 }  // namespace kuro::detail

@@ -27,10 +27,10 @@ class event_loop {
     }(root_task);
     io_loop(root_task);
     if constexpr (std::is_void_v<T>) {
-      exec.m_handle.destroy();
+      exec.handle.destroy();
     } else {
-      T result = exec.m_handle.promise().result();
-      exec.m_handle.destroy();
+      T result = exec.handle.promise().result();
+      exec.handle.destroy();
       return result;
     }
   }
