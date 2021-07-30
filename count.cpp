@@ -12,6 +12,7 @@
 auto thread_id() { return std::this_thread::get_id(); }
 
 auto count(size_t n, double interval) -> kuro::task<double> {
+  std::cout << thread_id() << " start: " << interval << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
   for (size_t i = 0; i < n; i += 1) {
     co_await kuro::sleep_for(interval);

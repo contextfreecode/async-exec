@@ -18,7 +18,9 @@ class task {
     task<T> get_return_object() noexcept {
       return task(std::coroutine_handle<promise_type>::from_promise(*this));
     }
+
     std::suspend_always initial_suspend() const noexcept { return {}; }
+
     auto final_suspend() const noexcept {
       struct awaitable {
         bool await_ready() noexcept { return false; }
@@ -35,6 +37,7 @@ class task {
       };
       return awaitable{};
     }
+
     void set_continuation(std::coroutine_handle<> continuation) {
       m_continuation = continuation;
     }
