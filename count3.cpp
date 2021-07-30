@@ -4,15 +4,15 @@
 template <typename Value>
 struct Task {
   struct promise_type {
-    auto get_return_object() {
+    auto get_return_object() -> std::coroutine_handle<promise_type> {
       return std::coroutine_handle<promise_type>::from_promise(*this);
     }
     auto final_suspend() noexcept -> std::suspend_never { return {}; }
     auto initial_suspend() -> std::suspend_never { return {}; }
-    auto return_value(Value value) {
+    auto return_value(Value value) -> void {
       this->value = value;
     }
-    auto unhandled_exception() {}
+    auto unhandled_exception() -> void {}
     Value value;
   };
 
