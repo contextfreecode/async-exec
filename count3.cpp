@@ -27,11 +27,11 @@ struct sleep_for {
     //
   }
 
-  auto await_ready() noexcept {}
+  auto await_ready() -> bool { return true; }
 
-  auto await_resume() noexcept {}
+  auto await_resume() {}
 
-  auto await_suspend(std::coroutine_handle<> handle) noexcept {}
+  auto await_suspend(std::coroutine_handle<> handle) {}
 };
 
 auto thing() -> Task<int> {
