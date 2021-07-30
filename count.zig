@@ -8,7 +8,8 @@ const exec = @import("./exec.zig");
 
 fn count(n: usize, interval: f64) f64 {
     const start = timeSec();
-    const sleep = std.event.Loop.instance.?.sleep;
+    // const sleep = std.event.Loop.instance.?.sleep;
+    const sleep = std.time.sleep;
     // const sleep = exec.sleep;
     std.debug.print("{} {}: before loop\n", .{ std.Thread.getCurrentId(), timeSec() });
     var i: usize = 0;
