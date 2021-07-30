@@ -22,7 +22,22 @@ struct Task {
   std::coroutine_handle<promise_type> handle;
 };
 
-auto thing() -> Task<int> { co_return 3; }
+struct sleep_for {
+  sleep_for(double seconds) {
+    //
+  }
+
+  auto await_ready() noexcept {}
+
+  auto await_resume() noexcept {}
+
+  auto await_suspend(std::coroutine_handle<> handle) noexcept {}
+};
+
+auto thing() -> Task<int> {
+  co_await sleep_for(0.6);
+  co_return 3;
+}
 
 auto main() -> int {
   // auto hi = co_await thing();
