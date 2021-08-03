@@ -1,31 +1,16 @@
-#include <coroutine>
 #include <iostream>
 
-template <typename Value>
-struct Task {
-  struct promise_type {
-    auto get_return_object() -> std::coroutine_handle<promise_type> {
-      return std::coroutine_handle<promise_type>::from_promise(*this);
-    }
+#include "exec.hpp"
 
-    auto final_suspend() noexcept -> std::suspend_never { return {}; }
+namespace kuro = exec;
 
-    auto initial_suspend() -> std::suspend_never { return {}; }
-
-    auto return_value(Value value) -> void { this->value = value; }
-
-    auto unhandled_exception() -> void {}
-
-    Value value;
-  };
-
-  std::coroutine_handle<promise_type> handle;
-};
-
-auto thing() -> Task<int> { co_return 3; }
+auto run() -> kuro::Task<double> {
+  co_await kuro::sleep_for(0.6);
+  co_return 3.5;
+}
 
 auto main() -> int {
   // auto hi = co_await thing();
-  auto hi = thing();
+  auto hi = run();
   std::cout << hi.handle.promise().value << "\n";
 }
