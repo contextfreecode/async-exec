@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <coroutine>
+#include <cstdint>
 
 namespace exec {
 
@@ -32,9 +33,9 @@ struct Sleep {
 };
 
 auto sleep_for(double seconds) -> Sleep {
-  return {.end = std::chrono::steady_clock::now() +
-                 std::chrono::duration<std::int64_t>(
-                     static_cast<std::int64_t>(seconds * 1e-9))};
+  using namespace std;
+  auto duration = chrono::duration<int64_t>(int64_t(seconds * 1e-9));
+  return {.end = chrono::steady_clock::now() + duration};
 }
 
 }  // namespace exec
