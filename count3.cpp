@@ -11,6 +11,6 @@ auto run() -> kuro::Task<double> {
 
 auto main() -> int {
   // auto hi = co_await thing();
-  auto hi = run();
-  std::cout << hi.handle.promise().value << "\n";
+  auto total = kuro::event_loop::run(run());
+  std::cout << total << "\n";
 }
