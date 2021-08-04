@@ -51,25 +51,25 @@ struct Sleep {
 
 auto sleep_for(double seconds) -> Sleep {
   using namespace std;
-  auto duration = chrono::duration<int64_t>(int64_t(seconds * 1e-9));
+  auto duration = chrono::nanoseconds(int64_t(seconds * 1e9));
   return {.end = chrono::steady_clock::now() + duration};
 }
 
 namespace event_loop {
 
 template <typename Value>
-auto run(const Task<Value>& root) {
+auto run(const Task<Value>& root) -> Value {
   while (sleeps.size()) {
     for (auto sleep = sleeps.begin(); sleep < sleeps.end(); sleep += 1) {
       if (sleep_ready(sleep->end)) {
         sleep->handle.resume();
+        sleeps.erase(sleep);
+        // With invalidated iters, just sloppily wait for the next pass.
+        break;
       }
-      sleeps.erase(sleep);
-      sleep -= 1;
     }
   }
-  // TODO Return what?
-  return 0;
+  return root.handle.promise().value;
 }
 
 }  // namespace event_loop

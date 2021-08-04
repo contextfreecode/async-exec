@@ -5,12 +5,13 @@
 namespace kuro = exec;
 
 auto run() -> kuro::Task<double> {
+  auto start = std::chrono::high_resolution_clock::now();
   co_await kuro::sleep_for(0.6);
-  co_return 3.5;
+  auto elapsed = std::chrono::high_resolution_clock::now() - start;
+  co_return elapsed.count() * 1e-9;
 }
 
 auto main() -> int {
-  // auto hi = co_await thing();
   auto total = kuro::event_loop::run(run());
   std::cout << total << "\n";
 }
