@@ -3,6 +3,7 @@
 #include <chrono>
 #include <coroutine>
 #include <cstdint>
+#include <iostream>
 #include <vector>
 
 namespace exec {
@@ -29,11 +30,18 @@ struct Task {
       return std::coroutine_handle<promise_type>::from_promise(*this);
     }
 
-    auto final_suspend() noexcept -> std::suspend_never { return {}; }
-    auto initial_suspend() -> std::suspend_never { return {}; }
-    auto return_value(Value value) -> void { this->value = value; }
+    auto final_suspend() noexcept -> std::suspend_never { std::cout << "final" << std::endl; return {}; }
+    auto initial_suspend() -> std::suspend_never { std::cout << "initial" << std::endl; return {}; }
+    auto return_value(Value value) -> void { std::cout << "return" << std::endl; this->value = value; }
     auto unhandled_exception() -> void {}
   };
+
+  auto await_ready() -> bool { std::cout << "task ready?" << std::endl; return handle.done(); }
+
+  auto await_suspend(std::coroutine_handle<> handle) {
+    std::cout << "task suspend" << std::endl;
+    // this->handle.promise().set
+  }
 
   std::coroutine_handle<promise_type> handle;
 };
@@ -41,10 +49,13 @@ struct Task {
 struct Sleep {
   TimePoint end;
 
-  auto await_ready() -> bool { return sleep_ready(end); }
-  auto await_resume() {}
+  auto await_ready() -> bool { std::cout << "ready?" << std::endl; return sleep_ready(end); }
+  auto await_resume() {
+    std::cout << "resume" << std::endl;
+  }
 
   auto await_suspend(std::coroutine_handle<> handle) {
+    std::cout << "suspend" << std::endl;
     sleeps.push_back({.end = end, .handle = handle});
   }
 };
@@ -59,9 +70,11 @@ namespace event_loop {
 
 template <typename Value>
 auto run(const Task<Value>& root) -> Value {
+  std::cout << "loop" << std::endl;
   while (sleeps.size()) {
     for (auto sleep = sleeps.begin(); sleep < sleeps.end(); sleep += 1) {
       if (sleep_ready(sleep->end)) {
+        std::cout << "calling resume" << std::endl;
         sleep->handle.resume();
         sleeps.erase(sleep);
         // With invalidated iters, just sloppily wait for the next pass.
