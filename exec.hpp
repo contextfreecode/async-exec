@@ -81,14 +81,14 @@ struct Sleep {
   TimePoint end;
 
   auto await_ready() -> bool {
-    std::cout << "ready?" << std::endl;
+    std::cout << "sleep ready?" << std::endl;
     return sleep_ready(end);
   }
 
-  auto await_resume() { std::cout << "resume" << std::endl; }
+  auto await_resume() { std::cout << "sleep resume" << std::endl; }
 
   auto await_suspend(std::coroutine_handle<> handle) {
-    std::cout << "suspend" << std::endl;
+    std::cout << "sleep suspend" << std::endl;
     sleeps.push_back({.end = end, .handle = handle});
   }
 };
