@@ -35,7 +35,8 @@ struct Task {
       struct Awaitable {
         auto await_ready() noexcept -> bool { return false; }
         auto await_resume() noexcept {}
-        auto await_suspend(std::coroutine_handle<promise_type> handle) noexcept {
+        auto await_suspend(std::coroutine_handle<promise_type> handle) noexcept
+            -> std::coroutine_handle<> {
           std::cout << "parent suspend" << std::endl;
           auto parent = handle.promise().parent;
           return parent ? parent : std::noop_coroutine();
@@ -45,16 +46,25 @@ struct Task {
       return Awaitable{};
     }
 
-    auto initial_suspend() -> std::suspend_never { std::cout << "initial" << std::endl; return {}; }
-    auto return_value(Value value) -> void { std::cout << "return" << std::endl; this->value = value; }
+    auto initial_suspend() -> std::suspend_never {
+      std::cout << "initial" << std::endl;
+      return {};
+    }
+
+    auto return_value(Value value) -> void {
+      std::cout << "return" << std::endl;
+      this->value = value;
+    }
+
     auto unhandled_exception() -> void {}
   };
 
-  auto await_ready() -> bool { std::cout << "task ready?" << std::endl; return handle.done(); }
-
-  auto await_resume() {
-    std::cout << "task resume" << std::endl;
+  auto await_ready() -> bool {
+    std::cout << "task ready?" << std::endl;
+    return handle.done();
   }
+
+  auto await_resume() { std::cout << "task resume" << std::endl; }
 
   auto await_suspend(std::coroutine_handle<> parent) {
     std::cout << "task suspend" << std::endl;
@@ -67,10 +77,12 @@ struct Task {
 struct Sleep {
   TimePoint end;
 
-  auto await_ready() -> bool { std::cout << "ready?" << std::endl; return sleep_ready(end); }
-  auto await_resume() {
-    std::cout << "resume" << std::endl;
+  auto await_ready() -> bool {
+    std::cout << "ready?" << std::endl;
+    return sleep_ready(end);
   }
+
+  auto await_resume() { std::cout << "resume" << std::endl; }
 
   auto await_suspend(std::coroutine_handle<> handle) {
     std::cout << "suspend" << std::endl;
