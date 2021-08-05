@@ -64,7 +64,10 @@ struct Task {
     return handle.done();
   }
 
-  auto await_resume() { std::cout << "task resume" << std::endl; }
+  auto await_resume() -> Value {
+    std::cout << "task resume" << std::endl;
+    return handle.promise().value;
+  }
 
   auto await_suspend(std::coroutine_handle<> parent) {
     std::cout << "task suspend" << std::endl;
