@@ -1,6 +1,9 @@
+#include <chrono>
 #include <iostream>
+// #include <kuro/kuro.hpp>
 #include <thread>
 
+// #include "exec/kuro.hpp"
 #include "exec.hpp"
 
 namespace kuro = exec;
@@ -27,5 +30,5 @@ auto run() -> kuro::task<double> {
 
 auto main() -> int {
   auto total = kuro::event_loop::run(run());
-  std::cout << total << "\n";
+  std::cout << thread_id() << " total: " << total << "\n";
 }
