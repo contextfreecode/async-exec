@@ -37,8 +37,8 @@ struct Task {
         auto await_resume() noexcept {}
         auto await_suspend(std::coroutine_handle<promise_type> handle) noexcept
             -> std::coroutine_handle<> {
-          std::cout << handle.address() << " parent suspend" << std::endl;
           auto parent = handle.promise().parent;
+          std::cout << handle.address() << " parent suspend for " << parent.address() << std::endl;
           return parent ? parent : std::noop_coroutine();
         }
       };
@@ -92,7 +92,7 @@ struct Sleep {
   auto await_resume() { std::cout << "sleep resume" << std::endl; }
 
   auto await_suspend(std::coroutine_handle<> handle) {
-    std::cout << "sleep suspend" << std::endl;
+    std::cout << handle.address() << " sleep suspend" << std::endl;
     sleeps.push_back({.end = end, .handle = handle});
   }
 };
