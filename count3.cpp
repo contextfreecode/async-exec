@@ -19,7 +19,9 @@ auto count(size_t n, double interval) -> kuro::Task<double> {
 }
 
 auto run() -> kuro::Task<double> {
-  auto elapsed = co_await count(2, 0.2);
+  auto task1 = count(2, 0.25);
+  auto task2 = count(3, 0.2);
+  auto elapsed = co_await task1;
   co_return elapsed;
 }
 

@@ -81,6 +81,17 @@ struct Task {
   std::coroutine_handle<promise_type> handle;
 };
 
+template<typename A, typename B>
+struct Gather {
+  A a;
+  B b;
+};
+
+template<typename A, typename B>
+auto gather(A&& a, B&& b) {
+  return Gather {.a = std::forward<A>(a), .b = std::forward<B>(b)};
+}
+
 struct Sleep {
   TimePoint end;
 
