@@ -37,7 +37,7 @@ struct Task {
         auto await_resume() noexcept {}
         auto await_suspend(std::coroutine_handle<promise_type> handle) noexcept
             -> std::coroutine_handle<> {
-          std::cout << "parent suspend" << std::endl;
+          std::cout << handle.address() << " parent suspend" << std::endl;
           auto parent = handle.promise().parent;
           return parent ? parent : std::noop_coroutine();
         }
@@ -59,18 +59,22 @@ struct Task {
     auto unhandled_exception() -> void {}
   };
 
+  ~Task() {
+    std::cout << handle.address() << " destruct!" << std::endl;
+  }
+
   auto await_ready() -> bool {
-    std::cout << "task ready?" << std::endl;
+    std::cout << handle.address() << " task ready?" << std::endl;
     return handle.done();
   }
 
   auto await_resume() -> Value {
-    std::cout << "task resume" << std::endl;
+    std::cout << handle.address() << " task resume" << std::endl;
     return handle.promise().value;
   }
 
   auto await_suspend(std::coroutine_handle<> parent) {
-    std::cout << "task suspend" << std::endl;
+    std::cout << handle.address() << " task suspend for " << parent.address() << std::endl;
     handle.promise().parent = parent;
   }
 
@@ -107,15 +111,18 @@ auto run(const Task<Value>& root) -> Value {
   while (sleeps.size()) {
     for (auto sleep = sleeps.begin(); sleep < sleeps.end(); sleep += 1) {
       if (sleep_ready(sleep->end)) {
+        // Remove first because sleeps might be invalidated after resume.
+        sleeps.erase(sleep);
         std::cout << "calling resume" << std::endl;
         sleep->handle.resume();
-        sleeps.erase(sleep);
         // With invalidated iters, just sloppily wait for the next pass.
         break;
       }
     }
   }
-  return root.handle.promise().value;
+  auto result = root.handle.promise().value;
+  root.handle.destroy();
+  return result;
 }
 
 }  // namespace event_loop
