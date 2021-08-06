@@ -7,7 +7,7 @@ namespace kuro = exec;
 
 auto thread_id() { return std::this_thread::get_id(); }
 
-auto count(size_t n, double interval) -> kuro::Task<double> {
+auto count(size_t n, double interval) -> kuro::task<double> {
   std::cout << thread_id() << " start: " << interval << std::endl;
   auto start = std::chrono::high_resolution_clock::now();
   for (size_t i = 0; i < n; i += 1) {
@@ -18,9 +18,9 @@ auto count(size_t n, double interval) -> kuro::Task<double> {
   co_return elapsed.count() * 1e-9;
 }
 
-auto run() -> kuro::Task<double> {
+auto run() -> kuro::task<double> {
   auto task1 = count(2, 0.25);
-  auto task2 = count(3, 0.2);
+  // auto task2 = count(3, 0.2);
   auto elapsed = co_await task1;
   co_return elapsed;
 }
