@@ -10,8 +10,8 @@ fn threadId() i32 {
     return std.Thread.getCurrentId();
 }
 
-fn count(n: usize, interval: f64) f64 {
-    const timer = std.time.Timer.start() catch unreachable;
+fn count(n: usize, interval: f64) !f64 {
+    const timer = try std.time.Timer.start();
     // const sleep = std.event.Loop.instance.?.sleep;
     const sleep = std.time.sleep;
     // const sleep = exec.sleep;
@@ -29,7 +29,7 @@ fn timerSeconds(timer: std.time.Timer) f64 {
     return @intToFloat(f64, timer.read()) / @intToFloat(f64, std.time.ns_per_s);
 }
 
-fn run() f64 {
+fn run() !f64 {
     std.debug.print("{} begin\n", .{threadId()});
     var frames = [_]@Frame(count){
         async count(2, 1.0),
@@ -38,7 +38,7 @@ fn run() f64 {
     std.debug.print("{} count size: {}\n", .{ threadId(), @sizeOf(@TypeOf(frames[0])) });
     var total = @as(f64, 0);
     for (frames) |*frame| {
-        total += await frame;
+        total += try await frame;
     }
     std.debug.print("{} end\n", .{threadId()});
     return total;
