@@ -50,13 +50,13 @@ struct Task {
     auto unhandled_exception() -> void {}
   };
 
+  std::coroutine_handle<promise_type> handle;
+
   auto await_ready() -> bool { return handle.done(); }
   auto await_resume() -> Value { return handle.promise().value; }
   auto await_suspend(std::coroutine_handle<> parent) {
     handle.promise().parent = parent;
   }
-
-  std::coroutine_handle<promise_type> handle;
 };
 
 template <typename Value>
