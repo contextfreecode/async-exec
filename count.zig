@@ -11,13 +11,13 @@ fn count(n: usize, interval: f64) f64 {
     // const sleep = std.event.Loop.instance.?.sleep;
     const sleep = std.time.sleep;
     // const sleep = exec.sleep;
-    std.debug.print("{} {}: before loop\n", .{ std.Thread.getCurrentId(), timeSec() });
+    std.debug.print("{} before loop\n", .{ std.Thread.getCurrentId() });
     var i: usize = 0;
     const wait_ns = @floatToInt(u64, interval * std.time.ns_per_s);
     while (i < n) : (i += 1) {
         sleep(wait_ns);
         const thread_id = std.Thread.getCurrentId();
-        std.debug.print("{} {}: {} seconds\n", .{ thread_id, timeSec(), interval });
+        std.debug.print("{} {} seconds\n", .{ thread_id, interval });
     }
     return timeSec() - start;
 }
@@ -29,7 +29,7 @@ fn timeSec() f64 {
 
 pub fn run() f64 {
     const thread_id = std.Thread.getCurrentId();
-    std.debug.print("{} {}: begin\n", .{ thread_id, timeSec() });
+    std.debug.print("{} begin\n", .{ thread_id });
     var frames = [_]@Frame(count){
         async count(2, 1.0),
         async count(3, 0.6),
@@ -39,7 +39,7 @@ pub fn run() f64 {
     for (frames) |*frame| {
         total += await frame;
     }
-    std.debug.print("{} {}: done\n", .{ thread_id, timeSec() });
+    std.debug.print("{} done\n", .{ thread_id });
     return total;
 }
 
