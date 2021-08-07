@@ -6,8 +6,10 @@ pub const io_mode = .evented;
 const std = @import("std");
 const exec = @import("./exec.zig");
 
-fn threadId() i32 {
-    return std.Thread.getCurrentId();
+pub fn report(comptime format: []const u8, args: anytype) void {
+    std.debug.print("{} ", .{std.Thread.getCurrentId()});
+    std.debug.print(format, args);
+    std.debug.print("\n", .{});
 }
 
 fn count(n: usize, interval: f64) f64 {
@@ -15,12 +17,12 @@ fn count(n: usize, interval: f64) f64 {
     // const sleep = std.event.Loop.instance.?.sleep;
     const sleep = std.time.sleep;
     // const sleep = exec.sleep;
-    std.debug.print("{} before loop {}\n", .{ threadId(), interval });
+    report("before loop {}", .{interval});
     var i: usize = 0;
     const wait_ns = @floatToInt(u64, interval * std.time.ns_per_s);
     while (i < n) : (i += 1) {
         sleep(wait_ns);
-        std.debug.print("{} slept {}\n", .{ threadId(), interval });
+        report("slept {}", .{interval});
     }
     return timerSeconds(timer);
 }
@@ -30,29 +32,29 @@ fn timerSeconds(timer: std.time.Timer) f64 {
 }
 
 fn run() f64 {
-    std.debug.print("{} begin\n", .{threadId()});
+    report("begin", .{});
     var frames = [_]@Frame(count){
         async count(2, 1.0),
         async count(3, 0.6),
     };
-    std.debug.print("{} count size: {}\n", .{ threadId(), @sizeOf(@TypeOf(frames[0])) });
+    report("count size: {}", .{@sizeOf(@TypeOf(frames[0]))});
     var total = @as(f64, 0);
     for (frames) |*frame| {
         total += await frame;
     }
-    std.debug.print("{} end\n", .{threadId()});
+    report("end", .{});
     return total;
 }
 
 pub fn main() !void {
+    // _ = await async hi();
     // var task = async run();
-    // std.debug.print("{} run size: {}\n", .{threadId(), @sizeOf(@TypeOf(task))});
+    // report("run size: {}", .{@sizeOf(@TypeOf(task))});
     // exec.runLoop(false);
     // const total = await task;
     // _ = try std.Thread.spawn(exec.runLoop, true);
-    // _ = await async hi();
     const total = run();
-    std.debug.print("{} total: {}\n", .{ threadId(), total });
+    report("total: {}", .{total});
 }
 
 // fn hi() f64 {
