@@ -27,7 +27,7 @@ fn timeSec() f64 {
         @intToFloat(f64, std.time.ns_per_s);
 }
 
-pub fn run() f64 {
+fn run() f64 {
     const thread_id = std.Thread.getCurrentId();
     std.debug.print("{} begin\n", .{ thread_id });
     var frames = [_]@Frame(count){
@@ -43,12 +43,17 @@ pub fn run() f64 {
     return total;
 }
 
+fn hi() f64 {
+    return 1.0;
+}
+
 pub fn main() !void {
     // var task = async run();
     // std.debug.print("run size: {}\n", .{@sizeOf(@TypeOf(task))});
     // exec.runLoop(false);
     // const total = await task;
     // _ = try std.Thread.spawn(exec.runLoop, true);
+    _ = await async hi();
     const total = run();
     std.debug.print("total: {}\n", .{total});
 }
