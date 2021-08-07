@@ -8,7 +8,7 @@
 
 // namespace kuro = exec;
 
-template<typename... Values>
+template <typename... Values>
 auto report(Values... values) {
   std::cout << std::this_thread::get_id();
   ((std::cout << " " << values), ...);
