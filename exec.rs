@@ -50,7 +50,7 @@ impl TimerFuture {
             let mut shared_state = thread_shared_state.lock().unwrap();
             shared_state.completed = true;
             if let Some(waker) = shared_state.waker.take() {
-                crate::report("wake");
+                report!("wake");
                 waker.wake()
             }
         });
@@ -68,10 +68,10 @@ impl Future for TimerFuture {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut shared_state = self.shared_state.lock().unwrap();
         if shared_state.completed {
-            report(&format!("poll ready {:p}", &shared_state.completed));
+            report!("poll ready {:p}", &shared_state.completed);
             Poll::Ready(())
         } else {
-            report(&format!("poll pending {:p}", &shared_state.completed));
+            report!("poll pending {:p}", &shared_state.completed);
             shared_state.waker = Some(cx.waker().clone());
             Poll::Pending
         }
@@ -125,7 +125,7 @@ impl<Output> ArcWake for Task<Output> {
 impl<Output> Executor<Output> {
     pub fn run(&self) -> Option<Output> {
         while let Ok(task) = self.ready_queue.recv() {
-            report("got a task");
+            report!("got a task");
             let mut future_slot = task.future.lock().unwrap();
             if let Some(mut future) = future_slot.take() {
                 let waker = waker_ref(&task);
@@ -136,7 +136,7 @@ impl<Output> Executor<Output> {
                 // from it by calling the `Pin::as_mut` method.
                 match future.as_mut().poll(context) {
                     Poll::Pending => {
-                        report("put back");
+                        report!("put back");
                         *future_slot = Some(future);
                     }
                     Poll::Ready(value) => return Some(value),

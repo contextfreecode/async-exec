@@ -4,28 +4,32 @@ pub mod exec;
 
 use std::time::{Duration, Instant};
 
-pub fn report(message: &str) {
-    println!("{:?} {}", std::thread::current().id(), message);
+#[macro_export]
+macro_rules! report {
+    ($($tts:tt)*) => {
+        print!("{:?} ", std::thread::current().id());
+        println!($($tts)*);
+    }
 }
 
 async fn count(n: usize, interval: f64) -> f64 {
     let start = Instant::now();
     use async_std::task::sleep;
     // use exec::sleep;
-    report(&format!("before loop {}", interval));
+    report!("before loop {}", interval);
     for _ in 0..n {
         sleep(Duration::from_secs_f64(interval)).await;
-        report(&format!("slept {}", interval));
+        report!("slept {}", interval);
     }
     return start.elapsed().as_secs_f64();
 }
 
 async fn run() -> f64 {
-    report("begin");
+    report!("begin");
     let futures = vec![count(2, 1.0), count(3, 0.6)];
-    report(&format!("count size: {}", std::mem::size_of_val(&futures[0])));
+    report!("count size: {}", std::mem::size_of_val(&futures[0]));
     let total = futures::future::join_all(futures).await.iter().sum::<f64>();
-    report("end");
+    report!("end");
     total
 }
 
@@ -38,10 +42,10 @@ fn main() {
     use async_std::task::block_on;
     // use exec::block_on;
     let future = run();
-    report(&format!("run size: {}", std::mem::size_of_val(&future)));
+    report!("run size: {}", std::mem::size_of_val(&future));
     let total = block_on(future);
-    report(&format!("total: {}", total));
+    report!("total: {}", total);
     // println!("--------------");
     // let total = async_std::task::block_on(run());
-    // report(&format!("total: {}", total));
+    // report!("total: {}", total);
 }
