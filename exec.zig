@@ -1,3 +1,4 @@
+const report = @import("root").report;
 const std = @import("std");
 
 const Task = struct { frame: anyframe, time: i128 };
