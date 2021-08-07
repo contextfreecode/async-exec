@@ -21,16 +21,12 @@ pub fn block_on<F, Output>(future: F) -> Output
 where
     F: Future<Output = Output> + 'static + Send,
 {
-    report("begin all");
     let (executor, spawner) = new_executor_and_spawner();
     spawner.spawn(future);
-    report("spawned");
     // Drop the spawner so that our executor knows it has all the tasks.
     drop(spawner);
-    report("dropped");
     // Run the executor until the task queue is empty.
     let value = executor.run();
-    report("end all");
     value.unwrap()
 }
 
@@ -43,94 +39,56 @@ pub struct TimerFuture {
 }
 
 impl TimerFuture {
-    /// Create a new `TimerFuture` which will complete after the provided
-    /// timeout.
     pub fn new(duration: Duration) -> Self {
         let shared_state = Arc::new(Mutex::new(SharedState {
             completed: false,
             waker: None,
         }));
-
-        // Spawn the new thread
         let thread_shared_state = shared_state.clone();
         thread::spawn(move || {
             thread::sleep(duration);
             let mut shared_state = thread_shared_state.lock().unwrap();
-            // Signal that the timer has completed and wake up the last
-            // task on which the future was polled, if one exists.
             shared_state.completed = true;
             if let Some(waker) = shared_state.waker.take() {
                 crate::report("wake");
                 waker.wake()
             }
         });
-
         TimerFuture { shared_state }
     }
 }
 
-/// Shared state between the future and the waiting thread
 struct SharedState {
-    /// Whether or not the sleep time has elapsed
     completed: bool,
-
-    /// The waker for the task that `TimerFuture` is running on.
-    /// The thread can use this after setting `completed = true` to tell
-    /// `TimerFuture`'s task to wake up, see that `completed = true`, and
-    /// move forward.
     waker: Option<Waker>,
 }
 
 impl Future for TimerFuture {
     type Output = ();
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        report("poll");
-        // Look at the shared state to see if the timer has already completed.
         let mut shared_state = self.shared_state.lock().unwrap();
         if shared_state.completed {
+            report(&format!("poll ready {:p}", &shared_state.completed));
             Poll::Ready(())
         } else {
-            // Set waker so that the thread can wake up the current task
-            // when the timer has completed, ensuring that the future is polled
-            // again and sees that `completed = true`.
-            //
-            // It's tempting to do this once rather than repeatedly cloning
-            // the waker each time. However, the `TimerFuture` can move between
-            // tasks on the executor, which could cause a stale waker pointing
-            // to the wrong task, preventing `TimerFuture` from waking up
-            // correctly.
-            //
-            // N.B. it's possible to check for this using the `Waker::will_wake`
-            // function, but we omit that here to keep things simple.
+            report(&format!("poll pending {:p}", &shared_state.completed));
             shared_state.waker = Some(cx.waker().clone());
             Poll::Pending
         }
     }
 }
 
-/// Task executor that receives tasks off of a channel and runs them.
 pub struct Executor<Output> {
     ready_queue: Receiver<Arc<Task<Output>>>,
 }
 
-/// `Spawner` spawns new futures onto the task channel.
 #[derive(Clone)]
 pub struct Spawner<Output> {
     task_sender: SyncSender<Arc<Task<Output>>>,
 }
 
-/// A future that can reschedule itself to be polled by an `Executor`.
 struct Task<Output> {
-    /// In-progress future that should be pushed to completion.
-    ///
-    /// The `Mutex` is not necessary for correctness, since we only have
-    /// one thread executing tasks at once. However, Rust isn't smart
-    /// enough to know that `future` is only mutated from one thread,
-    /// so we need to use the `Mutex` to prove thread-safety. A production
-    /// executor would not need this, and could use `UnsafeCell` instead.
     future: Mutex<Option<BoxFuture<'static, Output>>>,
-
-    /// Handle to place the task itself back onto the task queue.
     task_sender: SyncSender<Arc<Task<Output>>>,
 }
 
@@ -145,7 +103,6 @@ pub fn new_executor_and_spawner<Output>() -> (Executor<Output>, Spawner<Output>)
 
 impl<Output> Spawner<Output> {
     pub fn spawn(&self, future: impl Future<Output = Output> + 'static + Send) {
-        report("spawn");
         let future = future.boxed();
         let task = Arc::new(Task {
             future: Mutex::new(Some(future)),
@@ -157,9 +114,6 @@ impl<Output> Spawner<Output> {
 
 impl<Output> ArcWake for Task<Output> {
     fn wake_by_ref(arc_self: &Arc<Self>) {
-        report("wake_by_ref");
-        // Implement `wake` by sending this task back onto the task channel
-        // so that it will be polled again by the executor.
         let cloned = arc_self.clone();
         arc_self
             .task_sender
@@ -172,12 +126,8 @@ impl<Output> Executor<Output> {
     pub fn run(&self) -> Option<Output> {
         while let Ok(task) = self.ready_queue.recv() {
             report("got a task");
-            // Take the future, and if it has not yet completed (is still Some),
-            // poll it in an attempt to complete it.
             let mut future_slot = task.future.lock().unwrap();
             if let Some(mut future) = future_slot.take() {
-                // println!("future: {}", std::any::type_name_of_val(&future.as_mut().as_mut()));
-                // Create a `LocalWaker` from the task itself
                 let waker = waker_ref(&task);
                 let context = &mut Context::from_waker(&*waker);
                 // `BoxFuture<T>` is a type alias for
@@ -187,8 +137,6 @@ impl<Output> Executor<Output> {
                 match future.as_mut().poll(context) {
                     Poll::Pending => {
                         report("put back");
-                        // We're not done processing the future, so put it
-                        // back in its task to be run again in the future.
                         *future_slot = Some(future);
                     }
                     Poll::Ready(value) => return Some(value),

@@ -5,18 +5,18 @@ pub mod exec;
 use std::time::{Duration, Instant};
 
 pub fn report(message: &str) {
-    use {chrono::Utc, std::thread};
-    println!("{:?} {:?} {}", thread::current().id(), Utc::now(), message);
+    use std::thread;
+    println!("{:?} {}", thread::current().id(), message);
 }
 
 async fn count(n: usize, interval: f64) -> f64 {
     let start = Instant::now();
     use async_std::task::sleep;
     // use exec::sleep;
-    report("before loop");
+    report(&format!("before loop {}", interval));
     for _ in 0..n {
         sleep(Duration::from_secs_f64(interval)).await;
-        report(&format!("{} seconds", interval));
+        report(&format!("slept {}", interval));
     }
     return start.elapsed().as_secs_f64();
 }
@@ -24,7 +24,7 @@ async fn count(n: usize, interval: f64) -> f64 {
 async fn run() -> f64 {
     report("begin");
     let futures = vec![count(2, 1.0), count(3, 0.6)];
-    println!("frame size: {}", std::mem::size_of_val(&futures[0]));
+    report(&format!("count size: {}", std::mem::size_of_val(&futures[0])));
     let total = futures::future::join_all(futures).await.iter().sum::<f64>();
     report("end");
     total
@@ -36,13 +36,13 @@ async fn run() -> f64 {
 // }
 
 fn main() {
-    // use async_std::task::block_on;
+    use async_std::task::block_on;
     // use exec::block_on;
     let future = run();
-    println!("run size: {}", std::mem::size_of_val(&future));
-    let total = exec::block_on(future);
-    println!("total: {}", total);
-    println!("--------------");
-    let total = async_std::task::block_on(run());
-    println!("total: {}", total);
+    report(&format!("run size: {}", std::mem::size_of_val(&future)));
+    let total = block_on(future);
+    report(&format!("total: {}", total));
+    // println!("--------------");
+    // let total = async_std::task::block_on(run());
+    // println!("total: {}", total);
 }
