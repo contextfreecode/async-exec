@@ -33,19 +33,19 @@ async fn run() -> f64 {
     total
 }
 
-// #[async_std::main]
-// async fn main() {
-//     run().await;
-// }
-
-fn main() {
-    use async_std::task::block_on;
-    // use exec::block_on;
-    let future = run();
-    report!("run size: {}", std::mem::size_of_val(&future));
-    let total = block_on(future);
-    report!("total: {}", total);
-    // println!("--------------");
-    // let total = async_std::task::block_on(run());
-    // report!("total: {}", total);
+#[async_std::main]
+async fn main() {
+    run().await;
 }
+
+// fn main() {
+//     use async_std::task::block_on;
+//     // use exec::block_on;
+//     let future = run();
+//     report!("run size: {}", std::mem::size_of_val(&future));
+//     let total = block_on(future);
+//     report!("total: {}", total);
+//     // println!("--------------");
+//     // let total = async_std::task::block_on(run());
+//     // report!("total: {}", total);
+// }

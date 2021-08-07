@@ -1,6 +1,6 @@
-// From std/event/loop.zig
-
+// See:
 // https://github.com/ziglang/zig/blob/c6844072ce440f581787bf97909261084a9edc6c/lib/std/io.zig#L8
+// https://github.com/ziglang/zig/blob/ade85471e2cdab466ba685a38c2c7949c9dd1632/lib/std/start.zig#L428
 pub const io_mode = .evented;
 
 const std = @import("std");
