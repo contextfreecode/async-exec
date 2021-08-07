@@ -12,6 +12,10 @@ pub fn report(comptime format: []const u8, args: anytype) void {
     std.debug.print("\n", .{});
 }
 
+fn timerSeconds(timer: std.time.Timer) f64 {
+    return @intToFloat(f64, timer.read()) / @intToFloat(f64, std.time.ns_per_s);
+}
+
 fn count(n: usize, interval: f64) f64 {
     const timer = std.time.Timer.start() catch unreachable;
     // const sleep = std.event.Loop.instance.?.sleep;
@@ -25,10 +29,6 @@ fn count(n: usize, interval: f64) f64 {
         report("slept {}", .{interval});
     }
     return timerSeconds(timer);
-}
-
-fn timerSeconds(timer: std.time.Timer) f64 {
-    return @intToFloat(f64, timer.read()) / @intToFloat(f64, std.time.ns_per_s);
 }
 
 fn run() f64 {
