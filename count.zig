@@ -11,7 +11,7 @@ fn threadId() i32 {
 }
 
 fn count(n: usize, interval: f64) f64 {
-    const start = timeSec();
+    const timer = std.time.Timer.start() catch unreachable;
     // const sleep = std.event.Loop.instance.?.sleep;
     const sleep = std.time.sleep;
     // const sleep = exec.sleep;
@@ -22,12 +22,11 @@ fn count(n: usize, interval: f64) f64 {
         sleep(wait_ns);
         std.debug.print("{} slept {}\n", .{ threadId(), interval });
     }
-    return timeSec() - start;
+    return timerSeconds(timer);
 }
 
-fn timeSec() f64 {
-    return @intToFloat(f64, std.time.nanoTimestamp()) /
-        @intToFloat(f64, std.time.ns_per_s);
+fn timerSeconds(timer: std.time.Timer) f64 {
+    return @intToFloat(f64, timer.read()) / @intToFloat(f64, std.time.ns_per_s);
 }
 
 fn run() f64 {
