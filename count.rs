@@ -5,8 +5,7 @@ pub mod exec;
 use std::time::{Duration, Instant};
 
 pub fn report(message: &str) {
-    use std::thread;
-    println!("{:?} {}", thread::current().id(), message);
+    println!("{:?} {}", std::thread::current().id(), message);
 }
 
 async fn count(n: usize, interval: f64) -> f64 {
@@ -44,5 +43,5 @@ fn main() {
     report(&format!("total: {}", total));
     // println!("--------------");
     // let total = async_std::task::block_on(run());
-    // println!("total: {}", total);
+    // report(&format!("total: {}", total));
 }

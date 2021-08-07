@@ -25,7 +25,7 @@ auto run() -> kuro::task<double> {
   std::cout << thread_id() << " begin" << std::endl;
   auto task1 = count(2, 1.0);
   auto task2 = count(3, 0.6);
-  std::cout << thread_id() << " task size " << sizeof(task1) << std::endl;
+  std::cout << thread_id() << " count size: " << sizeof(task1) << std::endl;
   auto [elapsed1, elapsed2] = co_await kuro::gather(task1, task2);
   std::cout << thread_id() << " end" << std::endl;
   co_return elapsed1 + elapsed2;
