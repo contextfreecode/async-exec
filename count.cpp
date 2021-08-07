@@ -11,7 +11,7 @@
 template<typename... Values>
 auto report(Values... values) {
   std::cout << std::this_thread::get_id();
-  (std::ostream*[]) {&(std::cout << " " << values)...};
+  ((std::cout << " " << values), ...);
   std::cout << std::endl;
 }
 
