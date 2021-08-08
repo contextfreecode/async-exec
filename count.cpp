@@ -28,7 +28,6 @@ auto count(size_t n, double interval) -> kuro::task<double> {
 
 auto run() -> kuro::task<double> {
   report("begin");
-  // std::cout << thread_id() << " begin" << std::endl;
   auto task1 = count(2, 1.0);
   auto task2 = count(3, 0.6);
   report("count size:", sizeof(task1));
