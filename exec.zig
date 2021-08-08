@@ -6,6 +6,7 @@ var task_list = [1]?Task{null} ** 10;
 var task_mutex = std.Thread.Mutex{};
 
 pub fn runLoop(endless: bool) void {
+    report("looping events y'all", .{});
     while (true) {
         const lock = task_mutex.acquire();
         const now = std.time.nanoTimestamp();
@@ -14,6 +15,7 @@ pub fn runLoop(endless: bool) void {
             if (task.* != null) {
                 any = true;
                 if (task.*.?.time <= now) {
+                    report("sleep over y'all", .{});
                     var frame = task.*.?.frame;
                     task.* = null;
                     break frame;

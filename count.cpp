@@ -1,12 +1,7 @@
 #include <chrono>
 #include <iostream>
-// #include <kuro/kuro.hpp>
+#include <kuro/kuro.hpp>
 #include <thread>
-
-#include "exec/kuro.hpp"
-// #include "exec.hpp"
-
-// namespace kuro = exec;
 
 template <typename... Values>
 auto report(Values... values) {
@@ -14,6 +9,11 @@ auto report(Values... values) {
   ((std::cout << " " << values), ...);
   std::cout << std::endl;
 }
+
+// #include "exec/kuro.hpp"
+// #include "exec.hpp"
+
+// namespace kuro = exec;
 
 auto count(size_t n, double interval) -> kuro::task<double> {
   report("before loop", interval);

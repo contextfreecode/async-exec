@@ -30,15 +30,15 @@ where
     value.unwrap()
 }
 
-pub fn sleep(duration: Duration) -> TimerFuture {
-    TimerFuture::new(duration)
+pub fn sleep(duration: Duration) -> SleepFuture {
+    SleepFuture::new(duration)
 }
 
-pub struct TimerFuture {
+pub struct SleepFuture {
     shared_state: Arc<Mutex<SharedState>>,
 }
 
-impl TimerFuture {
+impl SleepFuture {
     pub fn new(duration: Duration) -> Self {
         let shared_state = Arc::new(Mutex::new(SharedState {
             completed: false,
@@ -50,11 +50,11 @@ impl TimerFuture {
             let mut shared_state = thread_shared_state.lock().unwrap();
             shared_state.completed = true;
             if let Some(waker) = shared_state.waker.take() {
-                report!("wake");
+                report!("sleep over y'all");
                 waker.wake()
             }
         });
-        TimerFuture { shared_state }
+        SleepFuture { shared_state }
     }
 }
 
@@ -63,15 +63,15 @@ struct SharedState {
     waker: Option<Waker>,
 }
 
-impl Future for TimerFuture {
+impl Future for SleepFuture {
     type Output = ();
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut shared_state = self.shared_state.lock().unwrap();
         if shared_state.completed {
-            report!("poll ready {:p}", &shared_state.completed);
+            // report!("poll ready {:p}", &shared_state.completed);
             Poll::Ready(())
         } else {
-            report!("poll pending {:p}", &shared_state.completed);
+            // report!("poll pending {:p}", &shared_state.completed);
             shared_state.waker = Some(cx.waker().clone());
             Poll::Pending
         }
@@ -124,8 +124,8 @@ impl<Output> ArcWake for Task<Output> {
 
 impl<Output> Executor<Output> {
     pub fn run(&self) -> Option<Output> {
+        report!("looping events y'all");
         while let Ok(task) = self.ready_queue.recv() {
-            report!("got a task");
             let mut future_slot = task.future.lock().unwrap();
             if let Some(mut future) = future_slot.take() {
                 let waker = waker_ref(&task);
@@ -135,10 +135,7 @@ impl<Output> Executor<Output> {
                 // We can get a `Pin<&mut dyn Future + Send + 'static>`
                 // from it by calling the `Pin::as_mut` method.
                 match future.as_mut().poll(context) {
-                    Poll::Pending => {
-                        report!("put back");
-                        *future_slot = Some(future);
-                    }
+                    Poll::Pending => *future_slot = Some(future),
                     Poll::Ready(value) => return Some(value),
                 }
             }

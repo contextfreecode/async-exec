@@ -26,7 +26,6 @@ struct Task {
   struct promise_type {
     Value value;
     std::coroutine_handle<> parent;
-    std::coroutine_handle<promise_type> task_handle;
 
     auto get_return_object() -> std::coroutine_handle<promise_type> {
       return std::coroutine_handle<promise_type>::from_promise(*this);
@@ -82,9 +81,11 @@ namespace event_loop {
 
 template <typename Value>
 auto run(Task<Value> root) -> Value {
+  report("looping events y'all");
   while (sleeps.size()) {
     for (auto sleep = sleeps.begin(); sleep < sleeps.end(); sleep += 1) {
       if (sleep_ready(sleep->end)) {
+        report("sleep over y'all");
         // Remove first because sleeps might be invalidated after resume.
         sleeps.erase(sleep);
         sleep->handle.resume();
