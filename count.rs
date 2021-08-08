@@ -33,7 +33,8 @@ async fn run() -> f64 {
 
 #[async_std::main]
 async fn main() {
-    run().await;
+    let total = run().await;
+    report!("total: {}", total);
 }
 
 // fn main() {
