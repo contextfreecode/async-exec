@@ -4,9 +4,9 @@ use std::time::{Duration, Instant};
 
 #[macro_export]
 macro_rules! report {
-    ($($tts:tt)*) => {
+    ($($arg:tt)*) => {
         print!("{:?} ", std::thread::current().id());
-        println!($($tts)*);
+        println!($($arg)*);
     }
 }
 
